@@ -13,18 +13,24 @@ app.use(express.json());
 // CORS configuration - allowing local and production frontend URLs
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:3001", // including port 3001 just in case
   process.env.FRONTEND_URL
-].filter(Boolean);
+].filter(Boolean).map(url => url.replace(/\/$/, "")); // Strip trailing slashes
 
 app.use(
   cors({
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = "The CORS policy for this site does not allow access from the specified Origin.";
-        return callback(new Error(msg), false);
+      
+      const cleanOrigin = origin.replace(/\/$/, "");
+      const isAllowed = allowedOrigins.includes(cleanOrigin);
+      
+      if (!isAllowed) {
+        console.log(`CORS Blocked for origin: ${origin}. Allowed origins:`, allowedOrigins);
+        return callback(null, false); // Reject without throwing a 500 server crash
       }
+      
       return callback(null, true);
     },
     credentials: true,
