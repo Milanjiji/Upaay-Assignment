@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const Favorite = require("../models/Favorite");
+const User = require("../models/User");
 const { verifyUser } = require("../middleware/auth");
 
 // GET /api/favorites - list logged-in user's favorites
 router.get("/", verifyUser, async (req, res) => {
   try {
-    const favorites = await Favorite.find({ userId: req.user._id }).populate("movieId");
-    res.json(favorites.map(f => f.movieId).filter(Boolean));
+    const user = await User.findById(req.user._id).populate("favorites");
+    res.json(user?.favorites || []);
   } catch (error) {
     console.error("Fetch favorites error:", error);
     res.status(500).json({ message: "Failed to fetch favorites list" });
@@ -22,14 +22,23 @@ router.post("/toggle", verifyUser, async (req, res) => {
       return res.status(400).json({ message: "Movie ID is required" });
     }
 
-    const existing = await Favorite.findOne({ userId: req.user._id, movieId });
-    
-    if (existing) {
-      await Favorite.findByIdAndDelete(existing._id);
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.favorites) {
+      user.favorites = [];
+    }
+
+    const index = user.favorites.findIndex(favId => favId.toString() === movieId);
+    if (index > -1) {
+      user.favorites.splice(index, 1);
+      await user.save();
       res.json({ message: "Movie removed from favorites", favorited: false });
     } else {
-      const newFav = new Favorite({ userId: req.user._id, movieId });
-      await newFav.save();
+      user.favorites.push(movieId);
+      await user.save();
       res.json({ message: "Movie added to favorites", favorited: true });
     }
   } catch (error) {

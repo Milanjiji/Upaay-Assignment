@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 
 interface Movie {
@@ -51,6 +51,41 @@ export default function CheckoutScreen({
   const [expiryDate, setExpiryDate] = useState("");
   const [cvc, setCvc] = useState("");
   const [saveDetails, setSaveDetails] = useState(false);
+
+  // Load saved card details on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("upaay_saved_card");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setNameOnCard(parsed.nameOnCard || "");
+        setCardNumber(parsed.cardNumber || "");
+        setExpiryDate(parsed.expiryDate || "");
+        setCvc(parsed.cvc || "");
+        setSaveDetails(true);
+      }
+    } catch (e) {
+      console.error("Failed to load saved card details", e);
+    }
+  }, []);
+
+  const handlePaymentSubmit = () => {
+    if (paymentMethod === "card") {
+      try {
+        if (saveDetails) {
+          localStorage.setItem(
+            "upaay_saved_card",
+            JSON.stringify({ nameOnCard, cardNumber, expiryDate, cvc })
+          );
+        } else {
+          localStorage.removeItem("upaay_saved_card");
+        }
+      } catch (e) {
+        console.error("Failed to save card details", e);
+      }
+    }
+    onCompletePayment({ nameOnCard, cardNumber });
+  };
 
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
@@ -268,7 +303,7 @@ export default function CheckoutScreen({
 
       {/* Complete Payment Button: top 699px */}
       <button
-        onClick={() => onCompletePayment({ nameOnCard, cardNumber })}
+        onClick={handlePaymentSubmit}
         className="absolute top-[699px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
       >
         Complete Payment

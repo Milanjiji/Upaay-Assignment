@@ -203,15 +203,15 @@ const seedDB = async () => {
     }
 
     const timeSlots = ["10:00 AM", "2:00 PM", "6:00 PM"];
-    const formatsList = ["2D", "3D"];
     let showtimeCount = 0;
 
     for (const theater of theaters) {
       for (const movie of showingMovies) {
+        const movieFormats = movie.formats && movie.formats.length > 0 ? movie.formats : ["2D"];
         for (const date of dates) {
           for (let index = 0; index < timeSlots.length; index++) {
             const time = timeSlots[index];
-            const format = formatsList[index % formatsList.length];
+            const format = movieFormats[index % movieFormats.length];
             
             const showtime = new Showtime({
               movieId: movie._id,
