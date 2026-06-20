@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   
   // Form field states
@@ -66,19 +68,22 @@ export default function LoginPage() {
         throw new Error(data.message || "Something went wrong");
       }
 
-      setMessage({ text: data.message || "Success!", type: "success" });
+      // Set auth cookie (Expires in 1 day)
+      const tokenValue = data.user.id;
+      document.cookie = `token=${tokenValue}; path=/; max-age=86400; SameSite=Lax; Secure`;
+
+      setMessage({ text: activeTab === "login" ? "Login successful! Redirecting..." : "Registration successful! Redirecting...", type: "success" });
       
       // Clear form on success
-      if (activeTab === "signup") {
-        setName("");
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-      } else {
-        // Successful login
-        setEmail("");
-        setPassword("");
-      }
+      setName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+
+      // Redirect to homepage after a brief delay
+      setTimeout(() => {
+        router.push("/");
+      }, 1000);
     } catch (err: any) {
       setMessage({ text: err.message || "Failed to connect to server", type: "error" });
     } finally {
