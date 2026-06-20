@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import useSWR from "swr";
 import { fetcher } from "@/store/fetcher";
@@ -29,6 +29,40 @@ interface HomeScreenProps {
 export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
   const [activeTab, setActiveTab] = useState<"now_showing" | "coming_soon">("now_showing");
 
+  // Drag-to-scroll horizontal movies list
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragged, setDragged] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setDragged(false);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeftState(scrollRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    if (Math.abs(walk) > 5) {
+      setDragged(true);
+    }
+    scrollRef.current.scrollLeft = scrollLeftState - walk;
+  };
+
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   const { data: movies = [], isLoading: moviesLoading } = useSWR<Movie[]>(`${API_URL}/api/movies`, fetcher);
@@ -41,7 +75,7 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
   const activeMovies = activeTab === "now_showing" ? nowShowingMovies : comingSoonMovies;
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
+    <div className="w-full h-full flex flex-col bg-[#F7F8FD] overflow-y-auto scrollbar-none relative">
       {/* Hero Banner Image */}
       <div className="relative w-full h-[220px] shrink-0">
         <Image
@@ -67,8 +101,8 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
         />
       </button>
 
-      {/* Tabs Container: top: 244px, left/right margins: 26px, height: 20px */}
-      <div className="absolute top-[244px] left-[26px] right-[26px] h-[20px] flex items-center justify-between">
+      {/* Tabs Container: margins, height: 20px */}
+      <div className="mt-[24px] px-[26px] h-[20px] flex items-center justify-between shrink-0">
         {/* Left side: Now Showing & Coming Soon tabs */}
         <div className="flex items-center gap-[24px] h-full">
           <button
@@ -103,8 +137,15 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
         </button>
       </div>
 
-      {/* Horizontal Movies List Container: top: 284px, left padding: 26px, right padding: 26px, height: 230px */}
-      <div className="absolute top-[284px] left-0 right-0 h-[230px] flex overflow-x-auto overflow-y-hidden gap-[16px] pl-[26px] pr-[26px] scrollbar-none">
+      {/* Horizontal Movies List Container */}
+      <div 
+        ref={scrollRef}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        className="mt-[20px] h-[230px] flex overflow-x-auto overflow-y-hidden gap-[16px] pl-[26px] pr-[26px] scrollbar-none shrink-0 cursor-grab active:cursor-grabbing select-none"
+      >
         {loading ? (
           <div className="w-full h-full flex items-center justify-center text-[12px] text-zinc-500 font-inter font-medium">
             Loading movies...
@@ -113,7 +154,11 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
           activeMovies.map((movie) => (
             <div 
               key={movie._id} 
-              onClick={() => onSelectMovie(movie)}
+              onClick={() => {
+                if (!dragged) {
+                  onSelectMovie(movie);
+                }
+              }}
               className="w-[106px] h-[230px] flex flex-col shrink-0 overflow-hidden cursor-pointer"
             >
               {/* Banner Image Card: width: 106px, height: 158px, border-radius: 5px */}
@@ -162,8 +207,8 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
         )}
       </div>
 
-      {/* Movie Theaters Title Bar: top: 539px, left/right margins: 26px, height: 20px */}
-      <div className="absolute top-[539px] left-[26px] right-[26px] h-[20px] flex items-center justify-between">
+      {/* Movie Theaters Title Bar */}
+      <div className="mt-[25px] px-[26px] h-[20px] flex items-center justify-between shrink-0">
         <h2 className="text-[16px] font-bold text-zinc-900 font-inter">Movie Theatres</h2>
         <button
           onClick={() => console.log("View All Theaters clicked")}
@@ -173,8 +218,8 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
         </button>
       </div>
 
-      {/* Theaters List Container: top: 575px, left/right: 26px, bottom: 89px, scrollable */}
-      <div className="absolute top-[575px] left-[26px] right-[26px] bottom-[89px] flex flex-col gap-[8px] overflow-y-auto scrollbar-none">
+      {/* Theaters List Container */}
+      <div className="mt-[16px] px-[26px] flex flex-col gap-[16px] pb-[109px] shrink-0">
         {loading ? (
           <div className="w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter py-[20px]">
             Loading theaters...
