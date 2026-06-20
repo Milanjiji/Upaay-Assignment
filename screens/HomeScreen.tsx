@@ -81,7 +81,11 @@ const theaters = [
   },
 ];
 
-export default function HomeScreen() {
+interface HomeScreenProps {
+  onSelectMovie: (movie: any) => void;
+}
+
+export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
   const [activeTab, setActiveTab] = useState<"now_showing" | "coming_soon">("now_showing");
 
   const activeMovies = activeTab === "now_showing" ? nowShowingMovies : comingSoonMovies;
@@ -152,7 +156,11 @@ export default function HomeScreen() {
       {/* Horizontal Movies List Container: top: 284px, left padding: 26px, right padding: 26px, height: 230px */}
       <div className="absolute top-[284px] left-0 right-0 h-[230px] flex overflow-x-auto overflow-y-hidden gap-[16px] pl-[26px] pr-[26px] scrollbar-none">
         {activeMovies.map((movie) => (
-          <div key={movie.id} className="w-[106px] h-[230px] flex flex-col shrink-0 overflow-hidden">
+          <div 
+            key={movie.id} 
+            onClick={() => onSelectMovie(movie)}
+            className="w-[106px] h-[230px] flex flex-col shrink-0 overflow-hidden cursor-pointer"
+          >
             {/* Banner Image Card: width: 106px, height: 158px, border-radius: 5px */}
             <div className="relative w-[106px] h-[158px] rounded-[5px] overflow-hidden shrink-0">
               <Image
@@ -222,30 +230,32 @@ export default function HomeScreen() {
 
             {/* Theater Details: gap of 20px from logo */}
             <div className="ml-[20px] flex-1 flex flex-col justify-between h-full py-[1px]">
-              {/* Theater Name: Inter 600 SemiBold 14px */}
-              <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] truncate">
-                {theater.name}
-              </h3>
+              <div className="flex flex-col gap-[4px]">
+                {/* Theater Name: Inter 600 SemiBold 14px */}
+                <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] truncate">
+                  {theater.name}
+                </h3>
 
-              {/* Theater Location: Inter 400 Regular 12px, color: #64748B */}
-              <div className="flex items-center gap-[4px] mt-[1px]">
-                <svg
-                  className="w-[12px] h-[12px] text-[#64748B] shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-[15px]">
-                  {theater.location}
-                </span>
+                {/* Theater Location: Inter 400 Regular 12px, color: #64748B */}
+                <div className="flex items-center gap-[4px]">
+                  <svg
+                    className="w-[12px] h-[12px] text-[#64748B] shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-[15px]">
+                    {theater.location}
+                  </span>
+                </div>
               </div>
 
               {/* Rate Range: Inter 600 SemiBold 14px, color: #64748B */}
-              <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none mt-[4px]">
+              <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none pb-[10px]">
                 {theater.rate}
               </p>
             </div>
