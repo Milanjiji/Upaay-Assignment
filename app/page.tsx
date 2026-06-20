@@ -8,6 +8,7 @@ import SelectScheduleScreen from "@/screens/SelectScheduleScreen";
 import SelectSeatsScreen from "@/screens/SelectSeatsScreen";
 import BookingSummaryScreen from "@/screens/BookingSummaryScreen";
 import CheckoutScreen from "@/screens/CheckoutScreen";
+import PaymentSuccessScreen from "@/screens/PaymentSuccessScreen";
 
 export default function Home() {
   const [selectedMovie, setSelectedMovie] = useState<any | null>(null);
@@ -17,7 +18,7 @@ export default function Home() {
   const [selectedFormat, setSelectedFormat] = useState<string>("");
   const [bookedSeats, setBookedSeats] = useState<string[]>([]);
   const [bookedTotalPrice, setBookedTotalPrice] = useState<number>(0);
-  const [activeView, setActiveView] = useState<"home" | "details" | "select_theatre" | "select_schedule" | "select_seats" | "booking_summary" | "checkout">("home");
+  const [activeView, setActiveView] = useState<"home" | "details" | "select_theatre" | "select_schedule" | "select_seats" | "booking_summary" | "checkout" | "payment_success">("home");
 
   const handleSelectMovie = (movie: any) => {
     setSelectedMovie(movie);
@@ -96,32 +97,7 @@ export default function Home() {
   };
 
   const handleCompletePayment = () => {
-    // Format selected date logically: "Friday, October 10"
-    const formatSelectedDate = (dateStr: string) => {
-      try {
-        const date = new Date(dateStr);
-        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const monthNames = [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December"
-        ];
-        return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}`;
-      } catch (e) {
-        return dateStr;
-      }
-    };
-
-    const formattedDate = formatSelectedDate(selectedDate);
-    const summary = `🎉 Ticket Booked Successfully! 🎉\n\n` +
-      `🎬 Movie: ${selectedMovie.title}\n` +
-      `🏛️ Theater: ${selectedTheatre.name}\n` +
-      `📅 Date: ${formattedDate}\n` +
-      `⏰ Time: ${selectedTime} (${selectedFormat})\n` +
-      `💺 Seats: ${bookedSeats.join(", ")}\n` +
-      `💰 Total Paid: ₹${bookedTotalPrice + 20}`;
-
-    alert(summary);
-    resetBookingFlow();
+    setActiveView("payment_success");
   };
 
   const resetBookingFlow = () => {
@@ -214,6 +190,21 @@ export default function Home() {
         onBack={handleBackFromCheckout}
         onCancel={handleCancelFromCheckout}
         onCompletePayment={handleCompletePayment}
+      />
+    );
+  }
+
+  if (activeView === "payment_success" && selectedMovie && selectedTheatre) {
+    return (
+      <PaymentSuccessScreen
+        movie={selectedMovie}
+        theater={selectedTheatre}
+        selectedDate={selectedDate}
+        selectedTime={selectedTime}
+        selectedFormat={selectedFormat}
+        seats={bookedSeats}
+        totalPrice={bookedTotalPrice}
+        onClose={resetBookingFlow}
       />
     );
   }
