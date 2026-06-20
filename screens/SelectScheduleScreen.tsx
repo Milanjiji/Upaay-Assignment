@@ -102,10 +102,10 @@ export default function SelectScheduleScreen({
         </div>
       </div>
 
-      {/* Back button: top 44px, left 26px */}
+      {/* Back button: top 28px, left 26px */}
       <button
         onClick={onBack}
-        className="absolute left-[26px] top-[44px] z-20 cursor-pointer flex items-center gap-[8px] text-white font-semibold text-[14px] font-inter"
+        className="absolute left-[26px] top-[28px] z-20 cursor-pointer flex items-center gap-[8px] text-white font-semibold text-[14px] font-inter"
       >
         <Image
           src="/assets/ep_back.svg"
@@ -116,10 +116,10 @@ export default function SelectScheduleScreen({
         Back
       </button>
 
-      {/* Cancel button: top 46px, right 26px */}
+      {/* Cancel button: top 28px, right 26px */}
       <button
         onClick={onCancel}
-        className="absolute right-[26px] top-[46px] z-20 cursor-pointer text-white font-semibold text-[14px] font-inter"
+        className="absolute right-[26px] top-[28px] z-20 cursor-pointer text-white font-semibold text-[14px] font-inter"
       >
         Cancel
       </button>

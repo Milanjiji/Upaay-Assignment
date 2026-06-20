@@ -125,10 +125,10 @@ export default function SelectSeatsScreen({
 
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
-      {/* Back button: top 44px, left 26px */}
+      {/* Back button: top 28px, left 26px */}
       <button
         onClick={onBack}
-        className="absolute left-[26px] top-[44px] z-20 cursor-pointer flex items-center gap-[8px] text-zinc-900 font-semibold text-[14px] font-inter"
+        className="absolute left-[26px] top-[28px] z-20 cursor-pointer flex items-center gap-[8px] text-zinc-900 font-semibold text-[14px] font-inter"
       >
         <Image
           src="/assets/ep_back.svg"
@@ -140,16 +140,16 @@ export default function SelectSeatsScreen({
         Back
       </button>
 
-      {/* Cancel button: top 46px, right 26px */}
+      {/* Cancel button: top 28px, right 26px */}
       <button
         onClick={onCancel}
-        className="absolute right-[26px] top-[46px] z-20 cursor-pointer text-zinc-900 font-semibold text-[14px] font-inter"
+        className="absolute right-[26px] top-[28px] z-20 cursor-pointer text-zinc-900 font-semibold text-[14px] font-inter"
       >
         Cancel
       </button>
 
-      {/* Filling Progress Bar: top 78px, left/right margins: 26px, 60% filled */}
-      <div className="absolute top-[78px] left-[26px] right-[26px] h-[6px] bg-[#E7E7E7] rounded-full overflow-hidden">
+      {/* Filling Progress Bar: top 65px, left/right margins: 26px, 60% filled */}
+      <div className="absolute top-[65px] left-[26px] right-[26px] h-[6px] bg-[#E7E7E7] rounded-full overflow-hidden">
         <div className="h-full bg-[#4F46E5] w-[60%] rounded-full" />
       </div>
 
