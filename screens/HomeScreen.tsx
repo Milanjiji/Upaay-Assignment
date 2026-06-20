@@ -1,15 +1,68 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+
+// Mock Movie Data for "Now Showing" (from the reference image)
+const nowShowingMovies = [
+  {
+    id: 1,
+    title: "Meg 2: The Trench",
+    genre: "Action, Sci-fi, Horror",
+    rating: "4.5",
+  },
+  {
+    id: 2,
+    title: "The Nun II",
+    genre: "Horror",
+    rating: "4.5",
+  },
+  {
+    id: 3,
+    title: "Fast X",
+    genre: "Action, Adventure",
+    rating: "4.5",
+  },
+  {
+    id: 4,
+    title: "John Wick: Chapter 4",
+    genre: "Action, Thriller",
+    rating: "4.8",
+  },
+];
+
+// Mock Movie Data for "Coming Soon"
+const comingSoonMovies = [
+  {
+    id: 5,
+    title: "Dune: Part Two",
+    genre: "Adventure, Sci-Fi",
+    rating: "4.9",
+  },
+  {
+    id: 6,
+    title: "Oppenheimer",
+    genre: "Drama, History",
+    rating: "4.8",
+  },
+  {
+    id: 7,
+    title: "Barbie",
+    genre: "Comedy, Fantasy",
+    rating: "4.2",
+  },
+  {
+    id: 8,
+    title: "Spider-Man: Beyond",
+    genre: "Action, Sci-Fi",
+    rating: "4.9",
+  },
+];
 
 export default function HomeScreen() {
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"now_showing" | "coming_soon">("now_showing");
 
-  const handleLogout = () => {
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax; Secure";
-    router.push("/login");
-  };
+  const activeMovies = activeTab === "now_showing" ? nowShowingMovies : comingSoonMovies;
 
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
@@ -24,15 +77,86 @@ export default function HomeScreen() {
         />
       </div>
 
-      {/* Main Home Screen Content Area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <h2 className="text-lg font-semibold text-zinc-800">Home Screen Content</h2>
+      {/* Tabs Container: top: 244px, left/right margins: 26px, height: 20px */}
+      <div className="absolute top-[244px] left-[26px] right-[26px] h-[20px] flex items-center justify-between">
+        {/* Left side: Now Showing & Coming Soon tabs */}
+        <div className="flex items-center gap-[24px] h-full">
+          <button
+            onClick={() => setActiveTab("now_showing")}
+            className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-[2px] ${
+              activeTab === "now_showing"
+                ? "text-[#4F46E5] border-[#4F46E5]"
+                : "text-[#64748B] border-transparent"
+            } text-[12px] font-bold font-inter`}
+          >
+            Now Showing
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("coming_soon")}
+            className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-[2px] ${
+              activeTab === "coming_soon"
+                ? "text-[#4F46E5] border-[#4F46E5]"
+                : "text-[#64748B] border-transparent"
+            } text-[12px] font-bold font-inter`}
+          >
+            Coming Soon
+          </button>
+        </div>
+
+        {/* Right side: View All link */}
         <button
-          onClick={handleLogout}
-          className="mt-4 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-md text-sm font-medium cursor-pointer transition-colors"
+          onClick={() => console.log("View All clicked")}
+          className="h-full flex items-center justify-center cursor-pointer text-[#4F46E5] text-[12px] font-normal font-inter"
         >
-          Logout
+          View All
         </button>
+      </div>
+
+      {/* Horizontal Movies List Container: top: 284px, left padding: 26px, right padding: 26px, height: 230px */}
+      <div className="absolute top-[284px] left-0 right-0 h-[230px] flex overflow-x-auto gap-[16px] pl-[26px] pr-[26px] scrollbar-none">
+        {activeMovies.map((movie) => (
+          <div key={movie.id} className="w-[106px] h-[230px] flex flex-col shrink-0">
+            {/* Banner Image Card: width: 106px, height: 158px, border-radius: 5px */}
+            <div className="relative w-[106px] h-[158px] rounded-[5px] overflow-hidden shrink-0">
+              <Image
+                src="/assets/home/Hero Image.png"
+                alt={movie.title}
+                fill
+                className="object-cover"
+              />
+              
+              {/* Rating Tag: bottom right, height: 22px, width: 51px, bg: black, border-radius top-left: 5px */}
+              <div className="absolute bottom-0 right-0 w-[51px] h-[22px] bg-[#0B0A11]/90 rounded-tl-[5px] rounded-br-[5px] flex items-center justify-center gap-[4px] z-10">
+                {/* White Star SVG */}
+                <svg
+                  className="w-[10px] h-[10px] fill-white"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+                
+                {/* Rating text: Inter 600 SemiBold 12px */}
+                <span className="text-white text-[12px] font-semibold font-inter">
+                  {movie.rating}
+                </span>
+              </div>
+            </div>
+
+            {/* Text details area */}
+            <div className="flex flex-col mt-[8px]">
+              {/* Movie Title: Inter 600 SemiBold 14px */}
+              <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] line-clamp-2">
+                {movie.title}
+              </h3>
+              
+              {/* Movie Genre/Tags: Inter 400 Regular 12px */}
+              <p className="text-[12px] font-normal text-zinc-500 font-inter mt-[2px] leading-[15px] line-clamp-2">
+                {movie.genre}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -29,3 +29,12 @@ body {
   border-radius: 16px;
   overflow: hidden;
 }
+
+/* Hide scrollbars for chrome/safari/firefox */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
