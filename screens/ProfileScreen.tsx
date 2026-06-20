@@ -1,6 +1,7 @@
 "use client";
 
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { RootState } from "@/store";
 import { logoutUser } from "@/store/slices/authSlice";
 import { resetNavigation } from "@/store/slices/navigationSlice";
@@ -8,6 +9,7 @@ import { resetBooking } from "@/store/slices/bookingSlice";
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
+  const router = useRouter();
   const user = useSelector((state: RootState) => state.auth.user);
 
   // Fallback details if Redux slice isn't hydrated yet (or standard mock info)
@@ -77,6 +79,23 @@ export default function ProfileScreen() {
             </svg>
           </button>
         ))}
+
+        {user?.role === "admin" && (
+          <button
+            onClick={() => router.push("/admin")}
+            className="w-full h-[52px] bg-[#4F46E5]/10 border border-[#4F46E5]/20 rounded-[10px] flex items-center justify-between px-[16px] cursor-pointer hover:bg-[#4F46E5]/20 transition-colors shrink-0"
+          >
+            <div className="flex items-center gap-[12px]">
+              <span className="text-[18px]">⚙️</span>
+              <span className="text-[14px] font-bold text-[#4F46E5] font-inter">
+                Admin Console
+              </span>
+            </div>
+            <svg className="w-[16px] h-[16px] text-[#4F46E5]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
 
         {/* Spacer */}
         <div className="flex-1 min-h-[10px]" />

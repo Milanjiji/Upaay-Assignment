@@ -1,62 +1,84 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useDispatch } from "react-redux";
 import { navigateTo } from "@/store/slices/navigationSlice";
 import { setSelectedMovie } from "@/store/slices/bookingSlice";
 
 interface Movie {
-  id: number;
+  _id: string;
   title: string;
   genre: string;
-  rating: string;
-  image?: string;
+  rating: number;
+  posterUrl: string;
 }
-
-const defaultFavorites: Movie[] = [
-  {
-    id: 1,
-    title: "Meg 2: The Trench",
-    genre: "Action, Sci-fi, Horror",
-    rating: "4.5",
-  },
-  {
-    id: 4,
-    title: "John Wick: Chapter 4",
-    genre: "Action, Thriller",
-    rating: "4.8",
-  },
-];
 
 export default function FavoritesScreen() {
   const dispatch = useDispatch();
   const [favorites, setFavorites] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  // Fetch favorites from backend
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("favorite_movies");
-      if (stored) {
-        setFavorites(JSON.parse(stored));
-      } else {
-        // Populate default favorites for a better UX initially
-        localStorage.setItem("favorite_movies", JSON.stringify(defaultFavorites));
-        setFavorites(defaultFavorites);
+    const fetchUserFavorites = async () => {
+      try {
+        const cookies = document.cookie.split(";");
+        const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+        const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
+        
+        if (!tokenVal) {
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch(`${API_URL}/api/favorites`, {
+          headers: { "x-user-id": tokenVal }
+        });
+
+        if (res.ok) {
+          const list = await res.json();
+          setFavorites(list);
+        }
+      } catch (e) {
+        console.error("Error loading user favorites", e);
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      setFavorites(defaultFavorites);
-    }
-  }, []);
+    };
+
+    fetchUserFavorites();
+  }, [API_URL]);
 
   const handleBookMovie = (movie: Movie) => {
     dispatch(setSelectedMovie(movie));
     dispatch(navigateTo("details"));
   };
 
-  const handleRemoveFavorite = (movieId: number) => {
-    const updated = favorites.filter((m) => m.id !== movieId);
-    setFavorites(updated);
-    localStorage.setItem("favorite_movies", JSON.stringify(updated));
+  const handleRemoveFavorite = async (movieId: string) => {
+    try {
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+      const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
+      if (!tokenVal) return;
+
+      const res = await fetch(`${API_URL}/api/favorites/toggle`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": tokenVal
+        },
+        body: JSON.stringify({ movieId })
+      });
+
+      if (res.ok) {
+        // Filter out from local state
+        setFavorites((prev) => prev.filter((m) => m._id !== movieId));
+      }
+    } catch (e) {
+      console.error("Failed to remove favorite", e);
+    }
   };
 
   return (
@@ -68,19 +90,22 @@ export default function FavoritesScreen() {
 
       {/* Favorites List Container */}
       <div className="absolute top-[78px] left-[26px] right-[26px] bottom-[89px] overflow-y-auto scrollbar-none flex flex-col gap-[12px] pb-[16px]">
-        {favorites.length > 0 ? (
+        {loading ? (
+          <div className="flex-1 w-full h-full flex items-center justify-center text-[12px] text-zinc-500 font-inter font-medium py-[40px]">
+            Loading favorites...
+          </div>
+        ) : favorites.length > 0 ? (
           favorites.map((movie) => (
             <div
-              key={movie.id}
+              key={movie._id}
               className="w-full h-[96px] bg-white rounded-[10px] border border-zinc-150 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex overflow-hidden shrink-0 relative"
             >
               {/* Image Banner on the left (w: 80px) */}
               <div className="w-[80px] h-full shrink-0 relative bg-zinc-100">
-                <Image
-                  src="/assets/home/Hero Image.png"
+                <img
+                  src={movie.posterUrl || "/assets/home/Hero Image.png"}
                   alt={movie.title}
-                  fill
-                  className="object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
               </div>
 
@@ -118,10 +143,10 @@ export default function FavoritesScreen() {
                 </div>
               </div>
 
-              {/* Remove Favorite Button (cross at the top-right corner) */}
+              {/* Remove Favorite Button */}
               <button
-                onClick={() => handleRemoveFavorite(movie.id)}
-                className="absolute top-[8px] right-[8px] w-[20px] h-[20px] rounded-full hover:bg-zinc-100 flex items-center justify-center cursor-pointer text-zinc-400 hover:text-zinc-600 transition-colors"
+                onClick={() => handleRemoveFavorite(movie._id)}
+                className="absolute top-[8px] right-[8px] w-[20px] h-[20px] rounded-full hover:bg-zinc-50 flex items-center justify-center cursor-pointer text-zinc-400 hover:text-zinc-600 transition-colors"
               >
                 <svg className="w-[12px] h-[12px]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

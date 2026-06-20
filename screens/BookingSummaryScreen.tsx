@@ -3,17 +3,17 @@
 import Image from "next/image";
 
 interface Movie {
-  id: number;
+  _id: string;
   title: string;
   genre: string;
-  rating: string;
+  rating: number;
 }
 
 interface Theater {
-  id: number;
+  _id: string;
   name: string;
   location: string;
-  rate: string;
+  rateRange: string;
 }
 
 interface BookingSummaryScreenProps {

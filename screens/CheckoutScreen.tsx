@@ -4,17 +4,17 @@ import { useState } from "react";
 import Image from "next/image";
 
 interface Movie {
-  id: number;
+  _id: string;
   title: string;
   genre: string;
-  rating: string;
+  rating: number;
 }
 
 interface Theater {
-  id: number;
+  _id: string;
   name: string;
   location: string;
-  rate: string;
+  rateRange: string;
 }
 
 interface CheckoutScreenProps {
@@ -27,7 +27,7 @@ interface CheckoutScreenProps {
   totalPrice: number;
   onBack: () => void;
   onCancel: () => void;
-  onCompletePayment: () => void;
+  onCompletePayment: (cardDetails?: { nameOnCard: string; cardNumber: string }) => void;
 }
 
 export default function CheckoutScreen({
@@ -268,7 +268,7 @@ export default function CheckoutScreen({
 
       {/* Complete Payment Button: top 699px */}
       <button
-        onClick={onCompletePayment}
+        onClick={() => onCompletePayment({ nameOnCard, cardNumber })}
         className="absolute top-[699px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
       >
         Complete Payment

@@ -3,17 +3,19 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Movie {
-  id: number;
+  _id: string;
   title: string;
   genre: string;
-  rating: string;
+  rating: number;
+  posterUrl?: string;
 }
 
 interface Theater {
-  id: number;
+  _id: string;
   name: string;
   location: string;
-  rate: string;
+  rateRange: string;
+  imageUrl?: string;
 }
 
 interface BookingState {
@@ -22,6 +24,7 @@ interface BookingState {
   selectedDate: string;
   selectedTime: string;
   selectedFormat: string;
+  selectedShowtimeId: string;
   bookedSeats: string[];
   bookedTotalPrice: number;
   ticketPrice: number;
@@ -33,6 +36,7 @@ const initialState: BookingState = {
   selectedDate: "",
   selectedTime: "",
   selectedFormat: "",
+  selectedShowtimeId: "",
   bookedSeats: [],
   bookedTotalPrice: 0,
   ticketPrice: 280, // Default base price
@@ -54,10 +58,11 @@ export const bookingSlice = createSlice({
     },
     setSelectedSchedule: (
       state,
-      action: PayloadAction<{ format: string; time: string }>
+      action: PayloadAction<{ format: string; time: string; showtimeId: string }>
     ) => {
       state.selectedFormat = action.payload.format;
       state.selectedTime = action.payload.time;
+      state.selectedShowtimeId = action.payload.showtimeId;
     },
     toggleSeat: (state, action: PayloadAction<string>) => {
       const seatId = action.payload;
@@ -81,6 +86,7 @@ export const bookingSlice = createSlice({
       state.selectedDate = "";
       state.selectedTime = "";
       state.selectedFormat = "";
+      state.selectedShowtimeId = "";
       state.bookedSeats = [];
       state.bookedTotalPrice = 0;
     },

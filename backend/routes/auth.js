@@ -23,12 +23,16 @@ router.post("/signup", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Assign role automatically if domain is @upaay.creative
+    const role = email.toLowerCase().endsWith("@upaay.creative") ? "admin" : "user";
+
     // Create new user
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
       authProvider: "credentials",
+      role,
     });
 
     await newUser.save();
@@ -90,6 +94,19 @@ router.post("/login", async (req, res) => {
     console.error("Login error:", error);
     res.status(500).json({ message: "Server error during login" });
   }
+});
+
+// Get Current User Profile
+const { verifyUser } = require("../middleware/auth");
+router.get("/me", verifyUser, (req, res) => {
+  res.json({
+    user: {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+    },
+  });
 });
 
 module.exports = router;

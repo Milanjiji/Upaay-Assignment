@@ -1,48 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
-// Mock Theater Data (same as HomeScreen)
-const theaters = [
-  {
-    id: 1,
-    name: "The Grandview",
-    location: "Camp Aguinaldo, Quezon City",
-    rate: "₹320 - ₹450",
-  },
-  {
-    id: 2,
-    name: "Play Loft",
-    location: "Aurora Boulevard, Santa Mesa",
-    rate: "₹300 - ₹430",
-  },
-  {
-    id: 3,
-    name: "CinemaOne",
-    location: "A. Cruz, Pasay City",
-    rate: "₹320",
-  },
-  {
-    id: 4,
-    name: "Cinemount",
-    location: "Baclaran, Paranaque City",
-    rate: "₹350",
-  },
-];
-
 interface Movie {
-  id: number;
+  _id: string;
   title: string;
   genre: string;
-  rating: string;
+  rating: number;
+  posterUrl?: string;
 }
 
 interface Theater {
-  id: number;
+  _id: string;
   name: string;
   location: string;
-  rate: string;
+  rateRange: string;
+  imageUrl: string;
 }
 
 interface SelectTheatreScreenProps {
@@ -73,24 +47,51 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
 
   const daysList = getDays();
   const [selectedDate, setSelectedDate] = useState<string>(daysList[0].dateString);
+  const [theaters, setTheaters] = useState<Theater[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  // Fetch unique theaters running this movie on selectedDate
+  useEffect(() => {
+    const fetchTheatersForMovie = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/api/showtimes?movieId=${movie._id}&date=${selectedDate}`);
+        if (res.ok) {
+          const list = await res.json();
+          const uniqueMap = new Map();
+          list.forEach((slot: any) => {
+            if (slot.theaterId) {
+              uniqueMap.set(slot.theaterId._id, slot.theaterId);
+            }
+          });
+          setTheaters(Array.from(uniqueMap.values()));
+        }
+      } catch (err) {
+        console.error("Failed to load showtime theaters", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTheatersForMovie();
+  }, [movie._id, selectedDate, API_URL]);
 
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
       {/* Hero Banner Section: height 173px */}
-      <div className="relative w-full h-[173px] shrink-0">
-        <Image
-          src="/assets/home/Hero Image.png"
+      <div className="relative w-full h-[173px] shrink-0 bg-zinc-200">
+        <img
+          src={movie.posterUrl || "/assets/home/Hero Image.png"}
           alt={movie.title}
-          fill
-          className="object-cover"
-          priority
+          className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Title inside hero banner: top 98px */}
         <div className="absolute top-[98px] left-[26px] right-[26px] z-10 flex flex-col">
-          <h1 className="text-[20px] font-bold text-white font-inter leading-tight">
+          <h1 className="text-[20px] font-bold text-white font-inter leading-tight truncate">
             {movie.title}
           </h1>
-          <p className="text-[14px] font-normal text-white font-inter mt-[4px] leading-tight opacity-90">
+          <p className="text-[14px] font-normal text-white font-inter mt-[4px] leading-tight opacity-90 truncate">
             {movie.genre}
           </p>
         </div>
@@ -162,57 +163,68 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
       {/* Divider Bar: width 337px, top 331px */}
       <div className="absolute top-[331px] left-1/2 -translate-x-1/2 w-[337px] border-b border-[#CED6E0]" />
 
-      {/* Theaters List Container: top 360px, left/right margins: 26px, bottom: 16px, scrollable */}
+      {/* Theaters List Container: top 360px, left/right margins: 26px, bottom: 89px, scrollable */}
       <div className="absolute top-[360px] left-[26px] right-[26px] bottom-[89px] flex flex-col gap-[8px] overflow-y-auto scrollbar-none">
-        {theaters.map((theater) => (
-          <button
-            key={theater.id}
-            onClick={() => onSelectTheatre(theater, selectedDate)}
-            className="w-full h-[73px] flex items-center shrink-0 cursor-pointer text-left focus:outline-none"
-          >
-            {/* Theater Logo: Square of 73px, border radius: 5px */}
-            <div className="w-[73px] h-[73px] rounded-[5px] overflow-hidden shrink-0 relative bg-white border border-zinc-100 flex items-center justify-center">
-              <Image
-                src="/assets/home/Hero Image.png"
-                alt={theater.name}
-                fill
-                className="object-cover opacity-80"
-              />
-            </div>
-
-            {/* Theater Details: gap of 20px from logo */}
-            <div className="ml-[20px] flex-1 flex flex-col justify-between h-full py-[1px]">
-              <div className="flex flex-col gap-[4px]">
-                {/* Theater Name: Inter 600 SemiBold 14px */}
-                <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] truncate">
-                  {theater.name}
-                </h3>
-
-                {/* Theater Location: Inter 400 Regular 12px, color: #64748B */}
-                <div className="flex items-center gap-[4px]">
-                  <svg
-                    className="w-[12px] h-[12px] text-[#64748B] shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-[15px]">
-                    {theater.location}
-                  </span>
-                </div>
+        {loading ? (
+          <div className="w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter py-[20px]">
+            Loading theaters...
+          </div>
+        ) : theaters.length > 0 ? (
+          theaters.map((theater) => (
+            <button
+              key={theater._id}
+              onClick={() => onSelectTheatre(theater, selectedDate)}
+              className="w-full h-[73px] flex items-center shrink-0 cursor-pointer text-left focus:outline-none"
+            >
+              {/* Theater Logo: Square of 73px, border radius: 5px */}
+              <div className="w-[73px] h-[73px] rounded-[5px] overflow-hidden shrink-0 relative bg-white border border-zinc-100 flex items-center justify-center">
+                <img
+                  src={theater.imageUrl || "/assets/home/Hero Image.png"}
+                  alt={theater.name}
+                  className="absolute inset-0 w-full h-full object-cover opacity-80"
+                />
               </div>
 
-              {/* Rate Range: Inter 600 SemiBold 14px, color: #64748B */}
-              <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none pb-[10px]">
-                {theater.rate}
-              </p>
-            </div>
-          </button>
-        ))}
+              {/* Theater Details: gap of 20px from logo */}
+              <div className="ml-[20px] flex-1 flex flex-col justify-between h-full py-[1px]">
+                <div className="flex flex-col gap-[4px]">
+                  {/* Theater Name: Inter 600 SemiBold 14px */}
+                  <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] truncate">
+                    {theater.name}
+                  </h3>
+
+                  {/* Theater Location: Inter 400 Regular 12px, color: #64748B */}
+                  <div className="flex items-center gap-[4px]">
+                    <svg
+                      className="w-[12px] h-[12px] text-[#64748B] shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-[15px]">
+                      {theater.location}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Rate Range: Inter 600 SemiBold 14px, color: #64748B */}
+                <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none pb-[10px]">
+                  {theater.rateRange}
+                </p>
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="w-full flex flex-col items-center justify-center py-[40px] text-center">
+            <span className="text-[13px] text-zinc-500 font-inter font-medium">
+              No theaters running this movie on this date.
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

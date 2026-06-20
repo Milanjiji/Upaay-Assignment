@@ -1,20 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 interface Movie {
-  id: number;
+  _id: string;
   title: string;
   genre: string;
-  rating: string;
+  rating: number;
+  posterUrl?: string;
 }
 
 interface Theater {
-  id: number;
+  _id: string;
   name: string;
   location: string;
-  rate: string;
+  rateRange: string;
+}
+
+interface ShowtimeSlot {
+  _id: string;
+  movieId: string;
+  theaterId: string;
+  date: string;
+  time: string;
+  format: string;
+  price: number;
+  screenNumber: number;
 }
 
 interface SelectScheduleScreenProps {
@@ -23,7 +35,7 @@ interface SelectScheduleScreenProps {
   selectedDate: string;
   onBack: () => void;
   onCancel: () => void;
-  onGetTickets: (selectedFormat: string, selectedTime: string) => void;
+  onGetTickets: (selectedFormat: string, selectedTime: string, showtimeId: string) => void;
 }
 
 export default function SelectScheduleScreen({
@@ -34,14 +46,72 @@ export default function SelectScheduleScreen({
   onCancel,
   onGetTickets,
 }: SelectScheduleScreenProps) {
-  const [selectedFormat, setSelectedFormat] = useState<string>("2D");
-  const [selectedTime, setSelectedTime] = useState<string>("10:00 AM");
+  const [slots, setSlots] = useState<ShowtimeSlot[]>([]);
+  const [formats, setFormats] = useState<string[]>([]);
+  const [times, setTimes] = useState<string[]>([]);
+  const [selectedFormat, setSelectedFormat] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
-  // Format selection options
-  const formats = ["2D", "3D"];
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-  // Time selection options for Screen 1
-  const times = ["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM", "6:00 PM", "8:00 PM"];
+  // Fetch showtime slots
+  useEffect(() => {
+    const fetchSlots = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/api/showtimes?movieId=${movie._id}&theaterId=${theater._id}&date=${selectedDate}`);
+        if (res.ok) {
+          const list: ShowtimeSlot[] = await res.json();
+          setSlots(list);
+          
+          // Extract unique formats
+          const uniqueFormats = Array.from(new Set(list.map((s) => s.format)));
+          setFormats(uniqueFormats);
+          
+          if (uniqueFormats.length > 0) {
+            setSelectedFormat(uniqueFormats[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load showtime slots", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSlots();
+  }, [movie._id, theater._id, selectedDate, API_URL]);
+
+  // Update times list when selectedFormat changes
+  useEffect(() => {
+    if (!selectedFormat) {
+      setTimes([]);
+      setSelectedTime("");
+      return;
+    }
+    const filteredTimes = slots
+      .filter((s) => s.format === selectedFormat)
+      .map((s) => s.time);
+      
+    setTimes(filteredTimes);
+    if (filteredTimes.length > 0) {
+      setSelectedTime(filteredTimes[0]);
+    } else {
+      setSelectedTime("");
+    }
+  }, [selectedFormat, slots]);
+
+  const handleSubmit = () => {
+    // Find matching showtime ID
+    const match = slots.find(
+      (s) => s.format === selectedFormat && s.time === selectedTime
+    );
+    if (match) {
+      onGetTickets(selectedFormat, selectedTime, match._id);
+    } else {
+      alert("Selected showtime is not available.");
+    }
+  };
 
   // Format selected date logically: "Friday, October 10"
   const formatSelectedDate = (dateStr: string) => {
@@ -60,35 +130,35 @@ export default function SelectScheduleScreen({
 
   const formattedDate = formatSelectedDate(selectedDate);
 
+  // Find rate for selected format
+  const activeSlot = slots.find((s) => s.format === selectedFormat);
+  const priceDisplay = activeSlot ? `₹${activeSlot.price}` : theater.rateRange;
+
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
       {/* Hero Banner Section: height 173px */}
-      <div className="relative w-full h-[173px] shrink-0">
-        <Image
-          src="/assets/home/Hero Image.png"
+      <div className="relative w-full h-[173px] shrink-0 bg-zinc-200">
+        <img
+          src={movie.posterUrl || "/assets/home/Hero Image.png"}
           alt={movie.title}
-          fill
-          className="object-cover"
-          priority
+          className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Title and metadata inside hero banner: top 98px */}
         <div className="absolute top-[98px] left-[26px] right-[26px] z-10 flex flex-col">
-          <h1 className="text-[20px] font-bold text-white font-inter leading-tight">
+          <h1 className="text-[20px] font-bold text-white font-inter leading-tight truncate">
             {movie.title}
           </h1>
           
           {/* Metadata Row: Theater Name & Date */}
           <div className="flex items-center gap-[12px] mt-[6px] text-white font-normal font-inter text-[14px] leading-none opacity-90">
-            {/* Theater Name with building icon */}
-            <div className="flex items-center gap-[4px]">
+            <div className="flex items-center gap-[4px] truncate">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="shrink-0">
                 <path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2zm1 2h3v2H3V3zm0 4h3v2H3V7zm0 4h3v2H3v-2zm10 2H10v-2h3v2zm0-4H10V7h3v2zm0-4H10V3h3v2z"/>
               </svg>
-              <span>{theater.name}</span>
+              <span className="truncate">{theater.name}</span>
             </div>
 
-            {/* Date with formkit_date.svg icon */}
-            <div className="flex items-center gap-[4px]">
+            <div className="flex items-center gap-[4px] shrink-0">
               <Image
                 src="/assets/formkit_date.svg"
                 alt="Date"
@@ -134,76 +204,89 @@ export default function SelectScheduleScreen({
         Choose Schedule
       </h2>
 
-      {/* Format Row: top 267px, left/right margins 26px */}
-      <div className="absolute top-[267px] left-[26px] right-[26px] flex items-center justify-between">
-        <div className="flex items-center gap-[16px]">
-          {/* Format Title */}
-          <span className="text-[14px] font-semibold text-zinc-900 font-inter">
-            Format
-          </span>
+      {loading ? (
+        <div className="absolute top-[300px] left-0 right-0 text-center text-[12px] text-zinc-500 font-inter font-medium">
+          Loading schedules...
+        </div>
+      ) : slots.length > 0 ? (
+        <>
+          {/* Format Row: top 267px, left/right margins 26px */}
+          <div className="absolute top-[267px] left-[26px] right-[26px] flex items-center justify-between">
+            <div className="flex items-center gap-[16px]">
+              <span className="text-[14px] font-semibold text-zinc-900 font-inter">
+                Format
+              </span>
 
-          {/* Format boxes */}
-          <div className="flex gap-[8px]">
-            {formats.map((fmt) => {
-              const isSelected = selectedFormat === fmt;
+              {/* Format boxes */}
+              <div className="flex gap-[8px]">
+                {formats.map((fmt) => {
+                  const isSelected = selectedFormat === fmt;
+                  return (
+                    <button
+                      key={fmt}
+                      onClick={() => setSelectedFormat(fmt)}
+                      className={`w-[28px] h-[28px] rounded-[5px] border flex items-center justify-center font-semibold text-[12px] font-inter cursor-pointer transition-all duration-150 ${
+                        isSelected
+                          ? "bg-[#4F46E5] text-white border-[#4F46E5]"
+                          : "bg-[#F7F8FD] text-[#64748B] border-[#CED6E0]"
+                      }`}
+                    >
+                      {fmt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Rate range */}
+            <span className="text-[14px] font-semibold text-[#64748B] font-inter">
+              {priceDisplay}
+            </span>
+          </div>
+
+          {/* Divider Bar: width 337px, top 311px */}
+          <div className="absolute top-[311px] left-1/2 -translate-x-1/2 w-[337px] border-b border-[#CED6E0]" />
+
+          {/* Screen 1 Title: top 331px, left 26px */}
+          <h3 className="absolute top-[331px] left-[26px] text-[14px] font-semibold text-zinc-900 font-inter leading-none">
+            Screen 1
+          </h3>
+
+          {/* Screen boxes (Times): top 360px, left/right margins 26px */}
+          <div className="absolute top-[360px] left-[26px] right-[26px] grid grid-cols-3 gap-[12px] w-fit">
+            {times.map((t) => {
+              const isSelected = selectedTime === t;
               return (
                 <button
-                  key={fmt}
-                  onClick={() => setSelectedFormat(fmt)}
-                  className={`w-[28px] h-[28px] rounded-[5px] border flex items-center justify-center font-semibold text-[12px] font-inter cursor-pointer transition-all duration-150 ${
+                  key={t}
+                  onClick={() => setSelectedTime(t)}
+                  className={`px-[10px] h-[32px] w-full rounded-[5px] border flex items-center justify-center font-semibold text-[12px] font-inter cursor-pointer transition-all duration-150 ${
                     isSelected
                       ? "bg-[#4F46E5] text-white border-[#4F46E5]"
                       : "bg-[#F7F8FD] text-[#64748B] border-[#CED6E0]"
                   }`}
                 >
-                  {fmt}
+                  {t}
                 </button>
               );
             })}
           </div>
+
+          {/* Get Tickets Button: top 655px */}
+          <button
+            onClick={handleSubmit}
+            className="absolute top-[655px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
+          >
+            Get Tickets
+          </button>
+        </>
+      ) : (
+        <div className="absolute top-[300px] left-[26px] right-[26px] text-center py-[20px]">
+          <span className="text-[13px] text-zinc-500 font-inter font-medium">
+            No showtimes scheduled for this date.
+          </span>
         </div>
-
-        {/* Rate range */}
-        <span className="text-[14px] font-semibold text-[#64748B] font-inter">
-          {theater.rate}
-        </span>
-      </div>
-
-      {/* Divider Bar: width 337px, top 311px */}
-      <div className="absolute top-[311px] left-1/2 -translate-x-1/2 w-[337px] border-b border-[#CED6E0]" />
-
-      {/* Screen 1 Title: top 331px, left 26px */}
-      <h3 className="absolute top-[331px] left-[26px] text-[14px] font-semibold text-zinc-900 font-inter leading-none">
-        Screen 1
-      </h3>
-
-      {/* Screen boxes (Times): top 360px, left/right margins 26px, max 3 per row, tight spacing */}
-      <div className="absolute top-[360px] left-[26px] right-[26px] grid grid-cols-3 gap-[12px] w-fit">
-        {times.map((t) => {
-          const isSelected = selectedTime === t;
-          return (
-            <button
-              key={t}
-              onClick={() => setSelectedTime(t)}
-              className={`px-[10px] h-[32px] w-full rounded-[5px] border flex items-center justify-center font-semibold text-[12px] font-inter cursor-pointer transition-all duration-150 ${
-                isSelected
-                  ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-                  : "bg-[#F7F8FD] text-[#64748B] border-[#CED6E0]"
-              }`}
-            >
-              {t}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Get Tickets Button: top 655px, same layout as movie details */}
-      <button
-        onClick={() => onGetTickets(selectedFormat, selectedTime)}
-        className="absolute top-[655px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
-      >
-        Get Tickets
-      </button>
+      )}
     </div>
   );
 }

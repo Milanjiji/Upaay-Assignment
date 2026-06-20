@@ -3,6 +3,11 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const authRoutes = require("./routes/auth");
+const movieRoutes = require("./routes/movies");
+const theaterRoutes = require("./routes/theaters");
+const showtimeRoutes = require("./routes/showtimes");
+const bookingRoutes = require("./routes/bookings");
+const favoriteRoutes = require("./routes/favorites");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -48,6 +53,11 @@ mongoose
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/movies", movieRoutes);
+app.use("/api/theaters", theaterRoutes);
+app.use("/api/showtimes", showtimeRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/favorites", favoriteRoutes);
 
 // Health Check / Test Route
 app.get("/", (req, res) => {

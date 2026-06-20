@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 interface Movie {
-  id: number;
+  _id: string;
   title: string;
   genre: string;
-  rating: string;
+  rating: number;
 }
 
 interface Theater {
-  id: number;
+  _id: string;
   name: string;
   location: string;
-  rate: string;
+  rateRange: string;
 }
 
 interface SelectSeatsScreenProps {
@@ -38,26 +40,65 @@ export default function SelectSeatsScreen({
   onCancel,
   onConfirmBooking,
 }: SelectSeatsScreenProps) {
-  // We have rows from A to M (excluding I)
-  const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M"];
-  
-  // Base ticket price (logical calculation based on theater rates or default ₹280)
-  const ticketPrice = 280;
+  const showtimeId = useSelector((state: RootState) => state.booking.selectedShowtimeId);
 
-  // Selected seats state: default J-9 and J-10 selected
-  const [selectedSeats, setSelectedSeats] = useState<string[]>(["J-9", "J-10"]);
+  // Seating configuration states loaded from database
+  const [rows, setRows] = useState<string[]>([]);
+  const [colsCount, setColsCount] = useState<number>(30);
+  const [verticalAisles, setVerticalAisles] = useState<Set<number>>(new Set());
+  const [horizontalAisles, setHorizontalAisles] = useState<Set<string>>(new Set());
+  const [occupiedSeats, setOccupiedSeats] = useState<Set<string>>(new Set());
+  const [ticketPrice, setTicketPrice] = useState<number>(280);
+  const [loading, setLoading] = useState(true);
 
-  // Occupied seats matching the screenshot
-  const occupiedSeats = new Set([
-    "H-7", "H-8", "H-9", "H-10",
-    "J-11", "J-12"
-  ]);
+  // Selected seats state
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
 
-  // Drag-to-scroll states and references
+  // Drag-to-scroll references
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeftState, setScrollLeftState] = useState(0);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  // Fetch showtime details and layouts
+  useEffect(() => {
+    const fetchShowtime = async () => {
+      if (!showtimeId) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/api/showtimes/${showtimeId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const tConfig = data.theaterId;
+          
+          if (tConfig) {
+            setRows(tConfig.rows || []);
+            setColsCount(tConfig.colsCount || 30);
+            setVerticalAisles(new Set(tConfig.verticalAisles || []));
+            setHorizontalAisles(new Set(tConfig.horizontalAisles || []));
+          }
+          setTicketPrice(data.price || 280);
+
+          // Find occupied seats from status
+          const occupied = new Set<string>();
+          (data.seats || []).forEach((s: any) => {
+            if (s.status === "occupied") {
+              occupied.add(s.seatNumber);
+            }
+          });
+          setOccupiedSeats(occupied);
+        }
+      } catch (err) {
+        console.error("Failed to load showtime layout", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchShowtime();
+  }, [showtimeId, API_URL]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
@@ -78,12 +119,12 @@ export default function SelectSeatsScreen({
     if (!isDragging || !scrollRef.current) return;
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5; // Drag sensitivity
+    const walk = (x - startX) * 1.5;
     scrollRef.current.scrollLeft = scrollLeftState - walk;
   };
 
   const handleSeatClick = (seatId: string) => {
-    if (occupiedSeats.has(seatId)) return; // Can't select occupied seats
+    if (occupiedSeats.has(seatId)) return;
 
     setSelectedSeats((prev) => {
       if (prev.includes(seatId)) {
@@ -95,33 +136,6 @@ export default function SelectSeatsScreen({
   };
 
   const totalPrice = selectedSeats.length * ticketPrice;
-
-  const renderSeatSet = (row: string, startCol: number, endCol: number) => {
-    const seats = [];
-    for (let col = startCol; col <= endCol; col++) {
-      const seatId = `${row}-${col}`;
-      const isOccupied = occupiedSeats.has(seatId);
-      const isSelected = selectedSeats.includes(seatId);
-
-      seats.push(
-        <button
-          key={seatId}
-          onClick={() => handleSeatClick(seatId)}
-          disabled={isOccupied}
-          className={`w-[23px] h-[23px] rounded-[5px] border flex items-center justify-center font-semibold text-[10px] font-inter transition-all duration-150 shrink-0 ${
-            isOccupied
-              ? "bg-[#94A3B8] border-[#94A3B8] text-white cursor-not-allowed"
-              : isSelected
-              ? "bg-[#4F46E5] border-[#4F46E5] text-white cursor-pointer"
-              : "bg-[#F7F8FD] border-[#CED6E0] text-[#64748B] cursor-pointer hover:bg-zinc-100"
-          }`}
-        >
-          {col}
-        </button>
-      );
-    }
-    return seats;
-  };
 
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
@@ -148,7 +162,7 @@ export default function SelectSeatsScreen({
         Cancel
       </button>
 
-      {/* Filling Progress Bar: top 65px, left/right margins: 26px, 60% filled */}
+      {/* Filling Progress Bar: top 65px, left/right margins: 26px */}
       <div className="absolute top-[65px] left-[26px] right-[26px] h-[6px] bg-[#E7E7E7] rounded-full overflow-hidden">
         <div className="h-full bg-[#4F46E5] w-[60%] rounded-full" />
       </div>
@@ -158,15 +172,12 @@ export default function SelectSeatsScreen({
         Select Seats
       </h2>
 
-      {/* Screen, Time, Price details row: just under the title (top ~125px) */}
+      {/* Screen, Time, Price details row */}
       <div className="absolute top-[125px] left-[26px] right-[26px] flex items-center justify-between">
         <div className="flex items-center gap-[8px] font-semibold text-[14px] font-inter">
-          {/* Screen 1 text */}
           <span className="text-[#121212]">Screen 1</span>
-          {/* Showtime text */}
           <span className="text-[#4F46E5]">{selectedTime}</span>
         </div>
-        {/* Dynamic price */}
         <span className="font-semibold text-[14px] font-inter text-[#1E1E1E]">
           ₹{totalPrice}
         </span>
@@ -187,7 +198,7 @@ export default function SelectSeatsScreen({
         SCREEN
       </span>
 
-      {/* Seats scrollable and draggable container: top 220px, bottom 180px */}
+      {/* Seats scrollable container: top 220px, bottom 180px */}
       <div
         ref={scrollRef}
         onMouseDown={handleMouseDown}
@@ -196,53 +207,69 @@ export default function SelectSeatsScreen({
         onMouseMove={handleMouseMove}
         className="absolute top-[220px] left-0 right-0 bottom-[180px] overflow-x-auto scrollbar-none flex flex-col select-none cursor-grab active:cursor-grabbing"
       >
-        <div className="min-w-max flex flex-col pr-[26px]">
-          {rows.map((row) => (
-            <div key={row} className="flex flex-col shrink-0">
-              {/* Vertical spacer/aisle before Row J */}
-              {row === "J" && (
-                <div className="h-[32px] shrink-0 flex">
-                  <div className="w-[42px] h-full sticky left-0 bg-[#F7F8FD] z-10" />
-                </div>
-              )}
+        {loading ? (
+          <div className="flex-1 w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter font-medium py-[40px]">
+            Loading layout...
+          </div>
+        ) : (
+          <div className="min-w-max flex flex-col pr-[26px]">
+            {rows.map((row) => (
+              <div key={row} className="flex flex-col shrink-0">
+                {/* Horizontal spacer/aisle before this row */}
+                {horizontalAisles.has(row) && (
+                  <div className="h-[32px] shrink-0 flex">
+                    <div className="w-[42px] h-full sticky left-0 bg-[#F7F8FD] z-10" />
+                  </div>
+                )}
 
-              {/* Row container with fixed height so letter backgrounds touch */}
-              <div className="h-[28px] flex items-center shrink-0">
-                {/* Sticky row letter span: h-full and w-[42px] to create a continuous solid strip */}
-                <span className="h-full w-[42px] flex items-center text-[#121212] font-normal text-[14px] font-inter text-left shrink-0 sticky left-0 bg-[#F7F8FD] pl-[26px] z-10">
-                  {row}
-                </span>
+                {/* Row container */}
+                <div className="h-[28px] flex items-center shrink-0">
+                  <span className="h-full w-[42px] flex items-center text-[#121212] font-normal text-[14px] font-inter text-left shrink-0 sticky left-0 bg-[#F7F8FD] pl-[26px] z-10">
+                    {row}
+                  </span>
 
-                {/* Set 1: Seats 1-10 (offset from sticky strip using ml-[8px]) */}
-                <div className="flex gap-[4px] ml-[8px]">
-                  {renderSeatSet(row, 1, 10)}
-                </div>
+                  {/* Dynamic Seat Loops with customizable aisles */}
+                  <div className="flex gap-[4px] ml-[8px] items-center">
+                    {Array.from({ length: colsCount }).map((_, idx) => {
+                      const col = idx + 1;
+                      const seatId = `${row}-${col}`;
+                      const isOccupied = occupiedSeats.has(seatId);
+                      const isSelected = selectedSeats.includes(seatId);
 
-                {/* Aisle 1 */}
-                <div className="w-[12px] shrink-0" />
-
-                {/* Set 2: Seats 11-20 */}
-                <div className="flex gap-[4px]">
-                  {renderSeatSet(row, 11, 20)}
-                </div>
-
-                {/* Aisle 2 */}
-                <div className="w-[12px] shrink-0" />
-
-                {/* Set 3: Seats 21-30 */}
-                <div className="flex gap-[4px]">
-                  {renderSeatSet(row, 21, 30)}
+                      return (
+                        <div key={seatId} className="flex items-center shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleSeatClick(seatId)}
+                            disabled={isOccupied}
+                            className={`w-[23px] h-[23px] rounded-[5px] border flex items-center justify-center font-semibold text-[10px] font-inter transition-all duration-150 shrink-0 ${
+                              isOccupied
+                                ? "bg-[#94A3B8] border-[#94A3B8] text-white cursor-not-allowed"
+                                : isSelected
+                                ? "bg-[#4F46E5] border-[#4F46E5] text-white cursor-pointer"
+                                : "bg-[#F7F8FD] border-[#CED6E0] text-[#64748B] cursor-pointer hover:bg-zinc-100"
+                            }`}
+                          >
+                            {col}
+                          </button>
+                          {verticalAisles.has(col) && (
+                            <div className="w-[12px] shrink-0" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Divider Bar: width 337px, top 647px */}
       <div className="absolute top-[647px] left-1/2 -translate-x-1/2 w-[337px] border-b border-[#CED6E0]" />
 
-      {/* Legend Container: top 659px, left/right margins 26px */}
+      {/* Legend Container: top 659px */}
       <div className="absolute top-[659px] left-[26px] right-[26px] flex items-center justify-center gap-[24px]">
         {/* Available */}
         <div className="flex items-center gap-[6px]">

@@ -1,40 +1,75 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useDispatch } from "react-redux";
 import { resetNavigation } from "@/store/slices/navigationSlice";
 import { resetBooking } from "@/store/slices/bookingSlice";
 
 interface Ticket {
-  movieTitle: string;
-  theaterName: string;
-  formattedDate: string;
-  time: string;
-  format: string;
+  _id: string;
+  movieId: { title: string; genre: string; posterUrl: string };
+  theaterId: { name: string; location: string };
+  showtimeId: { date: string; time: string; format: string };
   seats: string[];
-  price: number;
+  totalPrice: number;
   transactionDate: string;
 }
 
 export default function TicketsScreen() {
   const dispatch = useDispatch();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("booked_tickets");
-      if (stored) {
-        setTickets(JSON.parse(stored));
+    const fetchUserTickets = async () => {
+      try {
+        const cookies = document.cookie.split(";");
+        const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+        const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
+        
+        if (!tokenVal) {
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch(`${API_URL}/api/bookings/user`, {
+          headers: { "x-user-id": tokenVal }
+        });
+
+        if (res.ok) {
+          const list = await res.json();
+          setTickets(list);
+        }
+      } catch (e) {
+        console.error("Error fetching user tickets", e);
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error("Error reading tickets", e);
-    }
-  }, []);
+    };
+
+    fetchUserTickets();
+  }, [API_URL]);
 
   const handleBookNow = () => {
     dispatch(resetBooking());
     dispatch(resetNavigation());
+  };
+
+  // Format selected date logically: "Friday, October 10"
+  const formatSelectedDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}`;
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   return (
@@ -46,19 +81,23 @@ export default function TicketsScreen() {
 
       {/* Tickets List / Empty State: top 78px, bottom 89px */}
       <div className="absolute top-[78px] left-[26px] right-[26px] bottom-[89px] overflow-y-auto scrollbar-none flex flex-col gap-[16px] pb-[16px]">
-        {tickets.length > 0 ? (
-          tickets.map((ticket, idx) => (
+        {loading ? (
+          <div className="flex-1 w-full h-full flex items-center justify-center text-[12px] text-zinc-500 font-inter font-medium py-[40px]">
+            Loading tickets...
+          </div>
+        ) : tickets.length > 0 ? (
+          tickets.map((ticket) => (
             <div
-              key={idx}
+              key={ticket._id}
               className="w-full bg-white rounded-[12px] border border-zinc-150 shadow-[0_4px_12px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col shrink-0"
             >
               {/* Card Header (Movie Title & Format) */}
               <div className="p-[14px] bg-[#4F46E5]/5 border-b border-zinc-100 flex items-center justify-between">
                 <span className="text-[14px] font-bold text-zinc-950 font-inter truncate pr-[8px]">
-                  {ticket.movieTitle}
+                  {ticket.movieId?.title || "Movie Ticket"}
                 </span>
                 <span className="bg-[#4F46E5] text-white text-[10px] font-bold font-inter px-[6px] py-[2px] rounded">
-                  {ticket.format}
+                  {ticket.showtimeId?.format || "2D"}
                 </span>
               </div>
 
@@ -66,29 +105,25 @@ export default function TicketsScreen() {
               <div className="p-[14px] flex flex-col gap-[10px]">
                 {/* Theater Name */}
                 <div className="flex items-center gap-[6px] text-zinc-600 text-[12px] font-inter">
-                  <Image
+                  <img
                     src="/assets/Vector-3.svg"
                     alt="Theater"
-                    width={11}
-                    height={10}
-                    className="shrink-0 opacity-70"
+                    className="w-[11px] h-[10px] shrink-0 opacity-70"
                   />
-                  <span className="truncate">{ticket.theaterName}</span>
+                  <span className="truncate">{ticket.theaterId?.name || "Theater location"}</span>
                 </div>
 
                 {/* Date & Time */}
                 <div className="flex items-center justify-between text-zinc-500 text-[12px] font-inter">
                   <div className="flex items-center gap-[6px]">
-                    <Image
+                    <img
                       src="/assets/formkit_date.svg"
                       alt="Date"
-                      width={11}
-                      height={11}
-                      className="shrink-0 opacity-70"
+                      className="w-[11px] h-[11px] shrink-0 opacity-70"
                     />
-                    <span>{ticket.formattedDate}</span>
+                    <span>{formatSelectedDate(ticket.showtimeId?.date)}</span>
                   </div>
-                  <span>{ticket.time}</span>
+                  <span>{ticket.showtimeId?.time}</span>
                 </div>
 
                 {/* Seats list */}
@@ -115,7 +150,7 @@ export default function TicketsScreen() {
                       Paid
                     </span>
                     <span className="text-[14px] font-bold text-zinc-950 font-inter">
-                      ₹{ticket.price}
+                      ₹{ticket.totalPrice}
                     </span>
                   </div>
                 </div>
@@ -124,7 +159,7 @@ export default function TicketsScreen() {
           ))
         ) : (
           <div className="flex flex-col items-center justify-center flex-1 py-[60px] text-center">
-            {/* Cute Ticket Outline/Placeholder */}
+            {/* Cute Ticket Outline */}
             <div className="w-[100px] h-[100px] bg-zinc-100 rounded-full flex items-center justify-center mb-[20px]">
               <svg
                 className="w-[48px] h-[48px] text-zinc-400"

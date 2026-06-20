@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import {
@@ -15,6 +15,7 @@ import {
   setBookedSeatsAndPrice,
   resetBooking,
 } from "@/store/slices/bookingSlice";
+import { loginSuccess } from "@/store/slices/authSlice";
 
 import HomeScreen from "@/screens/HomeScreen";
 import MovieDetailsScreen from "@/screens/MovieDetailsScreen";
@@ -31,6 +32,29 @@ import Footer from "@/components/Footer";
 
 export default function Home() {
   const dispatch = useDispatch();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  useEffect(() => {
+    const rehydrateAuth = async () => {
+      try {
+        const cookies = document.cookie.split(";");
+        const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+        const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
+        if (!tokenVal) return;
+
+        const res = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { "x-user-id": tokenVal }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          dispatch(loginSuccess({ user: data.user, token: tokenVal }));
+        }
+      } catch (e) {
+        console.error("Auth rehydration failed", e);
+      }
+    };
+    rehydrateAuth();
+  }, [dispatch, API_URL]);
 
   const activeView = useSelector((state: RootState) => state.navigation.activeView);
   const selectedMovie = useSelector((state: RootState) => state.booking.selectedMovie);
@@ -40,6 +64,7 @@ export default function Home() {
   const selectedFormat = useSelector((state: RootState) => state.booking.selectedFormat);
   const bookedSeats = useSelector((state: RootState) => state.booking.bookedSeats);
   const bookedTotalPrice = useSelector((state: RootState) => state.booking.bookedTotalPrice);
+  const selectedShowtimeId = useSelector((state: RootState) => state.booking.selectedShowtimeId);
 
   const handleSelectMovie = (movie: any) => {
     dispatch(setSelectedMovie(movie));
@@ -76,8 +101,8 @@ export default function Home() {
     resetBookingFlow();
   };
 
-  const handleGetTickets = (format: string, time: string) => {
-    dispatch(setSelectedSchedule({ format, time }));
+  const handleGetTickets = (format: string, time: string, showtimeId: string) => {
+    dispatch(setSelectedSchedule({ format, time, showtimeId }));
     dispatch(navigateTo("select_seats"));
   };
 
@@ -114,43 +139,48 @@ export default function Home() {
     resetBookingFlow();
   };
 
-  const handleCompletePayment = () => {
+  const handleCompletePayment = async (cardDetails?: any) => {
     try {
-      const stored = localStorage.getItem("booked_tickets");
-      const currentTickets = stored ? JSON.parse(stored) : [];
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+      const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
 
-      const formatSelectedDate = (dateStr: string) => {
-        try {
-          const date = new Date(dateStr);
-          const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-          const monthNames = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
-          ];
-          return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}`;
-        } catch (e) {
-          return dateStr;
+      if (!tokenVal) {
+        alert("Session expired. Please log in again.");
+        return;
+      }
+
+      const payload = {
+        movieId: selectedMovie?._id,
+        theaterId: selectedTheatre?._id,
+        showtimeId: selectedShowtimeId,
+        seats: bookedSeats,
+        totalPrice: bookedTotalPrice + 20,
+        paymentMethod: "card",
+        cardDetails: {
+          nameOnCard: cardDetails?.nameOnCard || "Milan Jiji",
+          cardNumber: cardDetails?.cardNumber ? `**** **** **** ${cardDetails.cardNumber.slice(-4)}` : "**** **** **** 1234"
         }
       };
 
-      const newTicket = {
-        movieTitle: selectedMovie?.title || "",
-        theaterName: selectedTheatre?.name || "",
-        formattedDate: formatSelectedDate(selectedDate),
-        time: selectedTime,
-        format: selectedFormat,
-        seats: bookedSeats,
-        price: bookedTotalPrice + 20,
-        transactionDate: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
+      const res = await fetch(`${API_URL}/api/bookings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": tokenVal
+        },
+        body: JSON.stringify(payload)
+      });
 
-      currentTickets.unshift(newTicket);
-      localStorage.setItem("booked_tickets", JSON.stringify(currentTickets));
-    } catch (e) {
-      console.error("Failed to save ticket", e);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to finalize booking");
+      }
+
+      dispatch(navigateTo("payment_success"));
+    } catch (e: any) {
+      alert(`Booking Error: ${e.message}`);
     }
-
-    dispatch(navigateTo("payment_success"));
   };
 
   const handleCloseSuccess = () => {
