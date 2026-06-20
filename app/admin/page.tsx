@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
+import { fetcher } from "@/store/fetcher";
 
 interface Movie {
   _id: string;
@@ -58,14 +60,28 @@ export default function AdminPage() {
   const [authorized, setAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "movies" | "theaters" | "schedules" | "bookings">("overview");
 
-  // Global lists
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [theaters, setTheaters] = useState<Theater[]>([]);
-  const [schedules, setSchedules] = useState<Showtime[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-
   // Token helper
   const [token, setToken] = useState<string>("");
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  // SWR global lists caching
+  const { data: movies = [], mutate: mutateMovies } = useSWR<Movie[]>(
+    authorized && token ? `${API_URL}/api/movies` : null,
+    fetcher
+  );
+  const { data: theaters = [], mutate: mutateTheaters } = useSWR<Theater[]>(
+    authorized && token ? `${API_URL}/api/theaters` : null,
+    fetcher
+  );
+  const { data: schedules = [], mutate: mutateSchedules } = useSWR<Showtime[]>(
+    authorized && token ? `${API_URL}/api/showtimes` : null,
+    fetcher
+  );
+  const { data: bookings = [], mutate: mutateBookings } = useSWR<Booking[]>(
+    authorized && token ? `${API_URL}/api/bookings` : null,
+    fetcher
+  );
 
   // Modals / Overlays
   const [showMovieForm, setShowMovieForm] = useState(false);
@@ -117,8 +133,6 @@ export default function AdminPage() {
     screenNumber: 1
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-
   // Check auth cookie and fetch user role
   useEffect(() => {
     const checkAuth = async () => {
@@ -155,8 +169,6 @@ export default function AdminPage() {
         }
 
         setAuthorized(true);
-        // Load stats/database lists
-        await loadAllData(tokenVal);
       } catch (err) {
         console.error("Auth check failed", err);
         router.push("/");
@@ -168,24 +180,7 @@ export default function AdminPage() {
     checkAuth();
   }, [router, API_URL]);
 
-  const loadAllData = async (userIdToken: string) => {
-    const headers = { "x-user-id": userIdToken };
-    try {
-      const [resMovies, resTheaters, resSchedules, resBookings] = await Promise.all([
-        fetch(`${API_URL}/api/movies`, { headers }),
-        fetch(`${API_URL}/api/theaters`, { headers }),
-        fetch(`${API_URL}/api/showtimes`, { headers }),
-        fetch(`${API_URL}/api/bookings`, { headers })
-      ]);
 
-      if (resMovies.ok) setMovies(await resMovies.json());
-      if (resTheaters.ok) setTheaters(await resTheaters.json());
-      if (resSchedules.ok) setSchedules(await resSchedules.json());
-      if (resBookings.ok) setBookings(await resBookings.json());
-    } catch (e) {
-      console.error("Error loading database records", e);
-    }
-  };
 
   // Movie Actions
   const handleAddCast = () => {
@@ -304,7 +299,7 @@ export default function AdminPage() {
         posterUrl: "/assets/home/Hero Image.png",
         cast: []
       });
-      loadAllData(token);
+      mutateMovies();
     } catch (err: any) {
       alert(err.message);
     }
@@ -319,7 +314,7 @@ export default function AdminPage() {
       });
       if (!res.ok) throw new Error("Failed to delete movie");
       alert("Movie deleted");
-      loadAllData(token);
+      mutateMovies();
     } catch (err: any) {
       alert(err.message);
     }
@@ -395,7 +390,7 @@ export default function AdminPage() {
         verticalAisles: "10, 20",
         horizontalAisles: "J"
       });
-      loadAllData(token);
+      mutateTheaters();
     } catch (e: any) {
       alert(e.message);
     }
@@ -410,7 +405,7 @@ export default function AdminPage() {
       });
       if (!res.ok) throw new Error("Failed to delete theater");
       alert("Theater deleted");
-      loadAllData(token);
+      mutateTheaters();
     } catch (e: any) {
       alert(e.message);
     }
@@ -440,7 +435,7 @@ export default function AdminPage() {
 
       alert("Showtime scheduled successfully!");
       setShowScheduleForm(false);
-      loadAllData(token);
+      mutateSchedules();
     } catch (e: any) {
       alert(e.message);
     }
@@ -455,7 +450,7 @@ export default function AdminPage() {
       });
       if (!res.ok) throw new Error("Failed to cancel showtime");
       alert("Showtime deleted");
-      loadAllData(token);
+      mutateSchedules();
     } catch (e: any) {
       alert(e.message);
     }
@@ -471,7 +466,8 @@ export default function AdminPage() {
       });
       if (!res.ok) throw new Error("Failed to cancel booking");
       alert("Booking cancelled. Seats have been freed.");
-      loadAllData(token);
+      mutateBookings();
+      mutateSchedules();
     } catch (e: any) {
       alert(e.message);
     }

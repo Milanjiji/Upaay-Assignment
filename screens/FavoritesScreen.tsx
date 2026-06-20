@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { navigateTo } from "@/store/slices/navigationSlice";
 import { setSelectedMovie } from "@/store/slices/bookingSlice";
+import useSWR from "swr";
+import { fetcher } from "@/store/fetcher";
 
 interface Movie {
   _id: string;
@@ -15,41 +17,14 @@ interface Movie {
 
 export default function FavoritesScreen() {
   const dispatch = useDispatch();
-  const [favorites, setFavorites] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-  // Fetch favorites from backend
-  useEffect(() => {
-    const fetchUserFavorites = async () => {
-      try {
-        const cookies = document.cookie.split(";");
-        const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
-        const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
-        
-        if (!tokenVal) {
-          setLoading(false);
-          return;
-        }
-
-        const res = await fetch(`${API_URL}/api/favorites`, {
-          headers: { "x-user-id": tokenVal }
-        });
-
-        if (res.ok) {
-          const list = await res.json();
-          setFavorites(list);
-        }
-      } catch (e) {
-        console.error("Error loading user favorites", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserFavorites();
-  }, [API_URL]);
+  // Fetch favorites from backend using SWR
+  const { data: favorites = [], isLoading: loading, mutate } = useSWR<Movie[]>(
+    `${API_URL}/api/favorites`,
+    fetcher
+  );
 
   const handleBookMovie = (movie: Movie) => {
     dispatch(setSelectedMovie(movie));
@@ -63,6 +38,10 @@ export default function FavoritesScreen() {
       const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
       if (!tokenVal) return;
 
+      // Optimistic update: hide item immediately in the UI
+      const updatedFavorites = favorites.filter((m) => m._id !== movieId);
+      mutate(updatedFavorites, false);
+
       const res = await fetch(`${API_URL}/api/favorites/toggle`, {
         method: "POST",
         headers: {
@@ -72,12 +51,13 @@ export default function FavoritesScreen() {
         body: JSON.stringify({ movieId })
       });
 
-      if (res.ok) {
-        // Filter out from local state
-        setFavorites((prev) => prev.filter((m) => m._id !== movieId));
+      if (!res.ok) {
+        // Rollback on failure
+        mutate();
       }
     } catch (e) {
       console.error("Failed to remove favorite", e);
+      mutate();
     }
   };
 

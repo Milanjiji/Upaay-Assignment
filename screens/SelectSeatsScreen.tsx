@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import useSWR from "swr";
+import { fetcher } from "@/store/fetcher";
 
 interface Movie {
   _id: string;
@@ -42,16 +44,12 @@ export default function SelectSeatsScreen({
 }: SelectSeatsScreenProps) {
   const showtimeId = useSelector((state: RootState) => state.booking.selectedShowtimeId);
 
-  // Seating configuration states loaded from database
   const [rows, setRows] = useState<string[]>([]);
   const [colsCount, setColsCount] = useState<number>(30);
   const [verticalAisles, setVerticalAisles] = useState<Set<number>>(new Set());
   const [horizontalAisles, setHorizontalAisles] = useState<Set<string>>(new Set());
-  const [occupiedSeats, setOccupiedSeats] = useState<Set<string>>(new Set());
   const [ticketPrice, setTicketPrice] = useState<number>(280);
-  const [loading, setLoading] = useState(true);
-
-  // Selected seats state
+  const [occupiedSeats, setOccupiedSeats] = useState<Set<string>>(new Set());
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
 
   // Drag-to-scroll references
@@ -62,43 +60,33 @@ export default function SelectSeatsScreen({
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-  // Fetch showtime details and layouts
-  useEffect(() => {
-    const fetchShowtime = async () => {
-      if (!showtimeId) return;
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_URL}/api/showtimes/${showtimeId}`);
-        if (res.ok) {
-          const data = await res.json();
-          const tConfig = data.theaterId;
-          
-          if (tConfig) {
-            setRows(tConfig.rows || []);
-            setColsCount(tConfig.colsCount || 30);
-            setVerticalAisles(new Set(tConfig.verticalAisles || []));
-            setHorizontalAisles(new Set(tConfig.horizontalAisles || []));
-          }
-          setTicketPrice(data.price || 280);
+  // Fetch showtime details and layouts using SWR
+  const { data: showtime, isLoading: loading } = useSWR<any>(
+    showtimeId ? `${API_URL}/api/showtimes/${showtimeId}` : null,
+    fetcher
+  );
 
-          // Find occupied seats from status
-          const occupied = new Set<string>();
-          (data.seats || []).forEach((s: any) => {
-            if (s.status === "occupied") {
-              occupied.add(s.seatNumber);
-            }
-          });
-          setOccupiedSeats(occupied);
-        }
-      } catch (err) {
-        console.error("Failed to load showtime layout", err);
-      } finally {
-        setLoading(false);
+  // Sync state when showtime data loads
+  useEffect(() => {
+    if (showtime) {
+      const tConfig = showtime.theaterId;
+      if (tConfig) {
+        setRows(tConfig.rows || []);
+        setColsCount(tConfig.colsCount || 30);
+        setVerticalAisles(new Set(tConfig.verticalAisles || []));
+        setHorizontalAisles(new Set(tConfig.horizontalAisles || []));
       }
-    };
-    
-    fetchShowtime();
-  }, [showtimeId, API_URL]);
+      setTicketPrice(showtime.price || 280);
+
+      const occupied = new Set<string>();
+      (showtime.seats || []).forEach((s: any) => {
+        if (s.status === "occupied") {
+          occupied.add(s.seatNumber);
+        }
+      });
+      setOccupiedSeats(occupied);
+    }
+  }, [showtime]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;

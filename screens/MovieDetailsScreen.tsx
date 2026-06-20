@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import useSWR from "swr";
+import { fetcher } from "@/store/fetcher";
 
 interface CastMember {
   name: string;
@@ -29,7 +31,15 @@ interface MovieDetailsScreenProps {
 }
 
 export default function MovieDetailsScreen({ movie, onClose, onBookTickets }: MovieDetailsScreenProps) {
-  const [isFavorited, setIsFavorited] = useState(false);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  // Fetch favorites using SWR to compute favorited state reactively
+  const { data: favorites = [], mutate } = useSWR<any[]>(
+    `${API_URL}/api/favorites`,
+    fetcher
+  );
+
+  const isFavorited = favorites.some((m: any) => m._id === movie._id);
   
   const description = movie.description || "A research team encounters multiple threats while exploring the depths of the ocean, including a malevolent mining operation.";
   const formats = movie.formats || ["2D", "3D"];
@@ -50,40 +60,20 @@ export default function MovieDetailsScreen({ movie, onClose, onBookTickets }: Mo
     { name: "Shuya Sophia", character: "Meiying", image: "/assets/home/Hero Image.png" },
   ];
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-
-  // Check if movie is favorited
-  useEffect(() => {
-    const checkFavorite = async () => {
-      try {
-        const cookies = document.cookie.split(";");
-        const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
-        const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
-        if (!tokenVal) return;
-
-        const res = await fetch(`${API_URL}/api/favorites`, {
-          headers: { "x-user-id": tokenVal }
-        });
-        
-        if (res.ok) {
-          const list = await res.json();
-          const hasFav = list.some((m: any) => m._id === movie._id);
-          setIsFavorited(hasFav);
-        }
-      } catch (err) {
-        console.error("Error checking favorite state:", err);
-      }
-    };
-
-    checkFavorite();
-  }, [movie._id, API_URL]);
-
   const handleToggleFavorite = async () => {
     try {
       const cookies = document.cookie.split(";");
       const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
       const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
       if (!tokenVal) return;
+
+      // Optimistic update: toggle movie presence in cached array instantly
+      const hasFav = favorites.some((m: any) => m._id === movie._id);
+      const updatedFavorites = hasFav
+        ? favorites.filter((m: any) => m._id !== movie._id)
+        : [...favorites, movie];
+      
+      mutate(updatedFavorites, false);
 
       const res = await fetch(`${API_URL}/api/favorites/toggle`, {
         method: "POST",
@@ -94,12 +84,13 @@ export default function MovieDetailsScreen({ movie, onClose, onBookTickets }: Mo
         body: JSON.stringify({ movieId: movie._id })
       });
       
-      if (res.ok) {
-        const data = await res.json();
-        setIsFavorited(data.favorited);
+      if (!res.ok) {
+        // Rollback on failure
+        mutate();
       }
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
+      mutate();
     }
   };
 

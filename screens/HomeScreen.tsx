@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import useSWR from "swr";
+import { fetcher } from "@/store/fetcher";
 
 interface Movie {
   _id: string;
@@ -26,37 +28,13 @@ interface HomeScreenProps {
 
 export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
   const [activeTab, setActiveTab] = useState<"now_showing" | "coming_soon">("now_showing");
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [theaters, setTheaters] = useState<Theater[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [resMovies, resTheaters] = await Promise.all([
-          fetch(`${API_URL}/api/movies`),
-          fetch(`${API_URL}/api/theaters`)
-        ]);
-        
-        if (resMovies.ok) {
-          const data = await resMovies.json();
-          setMovies(data);
-        }
-        if (resTheaters.ok) {
-          const data = await resTheaters.json();
-          setTheaters(data);
-        }
-      } catch (err) {
-        console.error("Failed to load home screen data", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [API_URL]);
+  const { data: movies = [], isLoading: moviesLoading } = useSWR<Movie[]>(`${API_URL}/api/movies`, fetcher);
+  const { data: theaters = [], isLoading: theatersLoading } = useSWR<Theater[]>(`${API_URL}/api/theaters`, fetcher);
+
+  const loading = moviesLoading || theatersLoading;
 
   const nowShowingMovies = movies.filter((m) => m.showingType === "now_showing");
   const comingSoonMovies = movies.filter((m) => m.showingType === "coming_soon");

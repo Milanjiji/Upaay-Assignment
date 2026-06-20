@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { resetNavigation } from "@/store/slices/navigationSlice";
 import { resetBooking } from "@/store/slices/bookingSlice";
+import useSWR from "swr";
+import { fetcher } from "@/store/fetcher";
 
 interface Ticket {
   _id: string;
@@ -17,40 +19,14 @@ interface Ticket {
 
 export default function TicketsScreen() {
   const dispatch = useDispatch();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-  useEffect(() => {
-    const fetchUserTickets = async () => {
-      try {
-        const cookies = document.cookie.split(";");
-        const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
-        const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
-        
-        if (!tokenVal) {
-          setLoading(false);
-          return;
-        }
-
-        const res = await fetch(`${API_URL}/api/bookings/user`, {
-          headers: { "x-user-id": tokenVal }
-        });
-
-        if (res.ok) {
-          const list = await res.json();
-          setTickets(list);
-        }
-      } catch (e) {
-        console.error("Error fetching user tickets", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserTickets();
-  }, [API_URL]);
+  // Fetch tickets from backend using SWR
+  const { data: tickets = [], isLoading: loading } = useSWR<Ticket[]>(
+    `${API_URL}/api/bookings/user`,
+    fetcher
+  );
 
   const handleBookNow = () => {
     dispatch(resetBooking());

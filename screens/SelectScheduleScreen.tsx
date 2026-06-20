@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import useSWR from "swr";
+import { fetcher } from "@/store/fetcher";
 
 interface Movie {
   _id: string;
@@ -38,6 +40,8 @@ interface SelectScheduleScreenProps {
   onGetTickets: (selectedFormat: string, selectedTime: string, showtimeId: string) => void;
 }
 
+const EMPTY_ARRAY: ShowtimeSlot[] = [];
+
 export default function SelectScheduleScreen({
   movie,
   theater,
@@ -46,41 +50,32 @@ export default function SelectScheduleScreen({
   onCancel,
   onGetTickets,
 }: SelectScheduleScreenProps) {
-  const [slots, setSlots] = useState<ShowtimeSlot[]>([]);
   const [formats, setFormats] = useState<string[]>([]);
   const [times, setTimes] = useState<string[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
-  const [loading, setLoading] = useState(true);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-  // Fetch showtime slots
+  // Fetch showtime slots using SWR
+  const { data: slots = EMPTY_ARRAY, isLoading: loading } = useSWR<ShowtimeSlot[]>(
+    movie?._id && theater?._id ? `${API_URL}/api/showtimes?movieId=${movie._id}&theaterId=${theater._id}&date=${selectedDate}` : null,
+    fetcher
+  );
+
+  // Sync formats when slots change
   useEffect(() => {
-    const fetchSlots = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_URL}/api/showtimes?movieId=${movie._id}&theaterId=${theater._id}&date=${selectedDate}`);
-        if (res.ok) {
-          const list: ShowtimeSlot[] = await res.json();
-          setSlots(list);
-          
-          // Extract unique formats
-          const uniqueFormats = Array.from(new Set(list.map((s) => s.format)));
-          setFormats(uniqueFormats);
-          
-          if (uniqueFormats.length > 0) {
-            setSelectedFormat(uniqueFormats[0]);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load showtime slots", err);
-      } finally {
-        setLoading(false);
+    if (slots.length > 0) {
+      const uniqueFormats = Array.from(new Set(slots.map((s) => s.format)));
+      setFormats(uniqueFormats);
+      if (!selectedFormat || !uniqueFormats.includes(selectedFormat)) {
+        setSelectedFormat(uniqueFormats[0] || "");
       }
-    };
-    fetchSlots();
-  }, [movie._id, theater._id, selectedDate, API_URL]);
+    } else {
+      setFormats([]);
+      setSelectedFormat("");
+    }
+  }, [slots]);
 
   // Update times list when selectedFormat changes
   useEffect(() => {

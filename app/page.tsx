@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { mutate } from "swr";
 import { RootState } from "@/store";
 import {
   navigateTo,
@@ -176,6 +177,10 @@ export default function Home() {
         const error = await res.json();
         throw new Error(error.message || "Failed to finalize booking");
       }
+
+      // Revalidate tickets list and specific showtime seat details
+      mutate(`${API_URL}/api/bookings/user`);
+      mutate(`${API_URL}/api/showtimes/${selectedShowtimeId}`);
 
       dispatch(navigateTo("payment_success"));
     } catch (e: any) {

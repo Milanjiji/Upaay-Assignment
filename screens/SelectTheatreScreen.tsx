@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
+import useSWR from "swr";
+import { fetcher } from "@/store/fetcher";
 
 interface Movie {
   _id: string;
@@ -39,43 +41,30 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
       days.push({
         name: dayNames[nextDay.getDay()],
         number: nextDay.getDate(),
-        dateString: nextDay.toISOString().split("T")[0],
+        dateString: nextDay.toISOString().split("T")[0]
       });
     }
     return days;
   };
 
   const daysList = getDays();
-  const [selectedDate, setSelectedDate] = useState<string>(daysList[0].dateString);
-  const [theaters, setTheaters] = useState<Theater[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(daysList[0].dateString);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-  // Fetch unique theaters running this movie on selectedDate
-  useEffect(() => {
-    const fetchTheatersForMovie = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_URL}/api/showtimes?movieId=${movie._id}&date=${selectedDate}`);
-        if (res.ok) {
-          const list = await res.json();
-          const uniqueMap = new Map();
-          list.forEach((slot: any) => {
-            if (slot.theaterId) {
-              uniqueMap.set(slot.theaterId._id, slot.theaterId);
-            }
-          });
-          setTheaters(Array.from(uniqueMap.values()));
-        }
-      } catch (err) {
-        console.error("Failed to load showtime theaters", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTheatersForMovie();
-  }, [movie._id, selectedDate, API_URL]);
+  // Fetch unique theaters running this movie on selectedDate using SWR
+  const { data: showtimesList = [], isLoading: loading } = useSWR<any[]>(
+    movie?._id ? `${API_URL}/api/showtimes?movieId=${movie._id}&date=${selectedDate}` : null,
+    fetcher
+  );
+
+  const uniqueMap = new Map();
+  showtimesList.forEach((slot: any) => {
+    if (slot.theaterId) {
+      uniqueMap.set(slot.theaterId._id, slot.theaterId);
+    }
+  });
+  const theaters = Array.from(uniqueMap.values());
 
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
