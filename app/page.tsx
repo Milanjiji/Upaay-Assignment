@@ -1,6 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store";
+import {
+  navigateTo,
+  goBack,
+  resetNavigation,
+} from "@/store/slices/navigationSlice";
+import {
+  setSelectedMovie,
+  setSelectedTheatreAndDate,
+  setSelectedSchedule,
+  setBookedSeatsAndPrice,
+  resetBooking,
+} from "@/store/slices/bookingSlice";
+
 import HomeScreen from "@/screens/HomeScreen";
 import MovieDetailsScreen from "@/screens/MovieDetailsScreen";
 import SelectTheatreScreen from "@/screens/SelectTheatreScreen";
@@ -11,31 +26,33 @@ import CheckoutScreen from "@/screens/CheckoutScreen";
 import PaymentSuccessScreen from "@/screens/PaymentSuccessScreen";
 
 export default function Home() {
-  const [selectedMovie, setSelectedMovie] = useState<any | null>(null);
-  const [selectedTheatre, setSelectedTheatre] = useState<any | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedTime, setSelectedTime] = useState<string>("");
-  const [selectedFormat, setSelectedFormat] = useState<string>("");
-  const [bookedSeats, setBookedSeats] = useState<string[]>([]);
-  const [bookedTotalPrice, setBookedTotalPrice] = useState<number>(0);
-  const [activeView, setActiveView] = useState<"home" | "details" | "select_theatre" | "select_schedule" | "select_seats" | "booking_summary" | "checkout" | "payment_success">("home");
+  const dispatch = useDispatch();
+
+  const activeView = useSelector((state: RootState) => state.navigation.activeView);
+  const selectedMovie = useSelector((state: RootState) => state.booking.selectedMovie);
+  const selectedTheatre = useSelector((state: RootState) => state.booking.selectedTheatre);
+  const selectedDate = useSelector((state: RootState) => state.booking.selectedDate);
+  const selectedTime = useSelector((state: RootState) => state.booking.selectedTime);
+  const selectedFormat = useSelector((state: RootState) => state.booking.selectedFormat);
+  const bookedSeats = useSelector((state: RootState) => state.booking.bookedSeats);
+  const bookedTotalPrice = useSelector((state: RootState) => state.booking.bookedTotalPrice);
 
   const handleSelectMovie = (movie: any) => {
-    setSelectedMovie(movie);
-    setActiveView("details");
+    dispatch(setSelectedMovie(movie));
+    dispatch(navigateTo("details"));
   };
 
   const handleCloseDetails = () => {
-    setSelectedMovie(null);
-    setActiveView("home");
+    dispatch(setSelectedMovie(null));
+    dispatch(navigateTo("home"));
   };
 
   const handleBookTickets = () => {
-    setActiveView("select_theatre");
+    dispatch(navigateTo("select_theatre"));
   };
 
   const handleBackFromTheatre = () => {
-    setActiveView("details");
+    dispatch(navigateTo("details"));
   };
 
   const handleCancelFromTheatre = () => {
@@ -43,13 +60,12 @@ export default function Home() {
   };
 
   const handleSelectTheatre = (theater: any, dateString: string) => {
-    setSelectedTheatre(theater);
-    setSelectedDate(dateString);
-    setActiveView("select_schedule");
+    dispatch(setSelectedTheatreAndDate({ theater, dateString }));
+    dispatch(navigateTo("select_schedule"));
   };
 
   const handleBackFromSchedule = () => {
-    setActiveView("select_theatre");
+    dispatch(navigateTo("select_theatre"));
   };
 
   const handleCancelFromSchedule = () => {
@@ -57,13 +73,12 @@ export default function Home() {
   };
 
   const handleGetTickets = (format: string, time: string) => {
-    setSelectedFormat(format);
-    setSelectedTime(time);
-    setActiveView("select_seats");
+    dispatch(setSelectedSchedule({ format, time }));
+    dispatch(navigateTo("select_seats"));
   };
 
   const handleBackFromSeats = () => {
-    setActiveView("select_schedule");
+    dispatch(navigateTo("select_schedule"));
   };
 
   const handleCancelFromSeats = () => {
@@ -71,13 +86,12 @@ export default function Home() {
   };
 
   const handleConfirmBooking = (seats: string[], totalPrice: number) => {
-    setBookedSeats(seats);
-    setBookedTotalPrice(totalPrice);
-    setActiveView("booking_summary");
+    dispatch(setBookedSeatsAndPrice({ seats, totalPrice }));
+    dispatch(navigateTo("booking_summary"));
   };
 
   const handleBackFromSummary = () => {
-    setActiveView("select_seats");
+    dispatch(navigateTo("select_seats"));
   };
 
   const handleCancelFromSummary = () => {
@@ -85,11 +99,11 @@ export default function Home() {
   };
 
   const handleProceedToPayment = () => {
-    setActiveView("checkout");
+    dispatch(navigateTo("checkout"));
   };
 
   const handleBackFromCheckout = () => {
-    setActiveView("booking_summary");
+    dispatch(navigateTo("booking_summary"));
   };
 
   const handleCancelFromCheckout = () => {
@@ -97,18 +111,45 @@ export default function Home() {
   };
 
   const handleCompletePayment = () => {
-    setActiveView("payment_success");
+    dispatch(navigateTo("payment_success"));
+  };
+
+  const handleCloseSuccess = () => {
+    resetBookingFlow();
+  };
+
+  const handleProceedToFinal = () => {
+    // Format selected date logically: "Friday, October 10"
+    const formatSelectedDate = (dateStr: string) => {
+      try {
+        const date = new Date(dateStr);
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const monthNames = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+        return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}`;
+      } catch (e) {
+        return dateStr;
+      }
+    };
+
+    const formattedDate = formatSelectedDate(selectedDate);
+    const summary = `🎉 Ticket Booked Successfully! 🎉\n\n` +
+      `🎬 Movie: ${selectedMovie.title}\n` +
+      `🏛️ Theater: ${selectedTheatre.name}\n` +
+      `📅 Date: ${formattedDate}\n` +
+      `⏰ Time: ${selectedTime} (${selectedFormat})\n` +
+      `💺 Seats: ${bookedSeats.join(", ")}\n` +
+      `💰 Total Paid: ₹${bookedTotalPrice + 20}`;
+
+    alert(summary);
+    resetBookingFlow();
   };
 
   const resetBookingFlow = () => {
-    setSelectedMovie(null);
-    setSelectedTheatre(null);
-    setSelectedDate("");
-    setSelectedTime("");
-    setSelectedFormat("");
-    setBookedSeats([]);
-    setBookedTotalPrice(0);
-    setActiveView("home");
+    dispatch(resetBooking());
+    dispatch(resetNavigation());
   };
 
   if (activeView === "details" && selectedMovie) {
@@ -204,7 +245,7 @@ export default function Home() {
         selectedFormat={selectedFormat}
         seats={bookedSeats}
         totalPrice={bookedTotalPrice}
-        onClose={resetBookingFlow}
+        onClose={handleCloseSuccess}
       />
     );
   }
