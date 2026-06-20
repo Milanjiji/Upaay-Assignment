@@ -59,6 +59,28 @@ const comingSoonMovies = [
   },
 ];
 
+// Mock Theater Data (from the reference image)
+const theaters = [
+  {
+    id: 1,
+    name: "The Grandview",
+    location: "Camp Aguinaldo, Quezon City",
+    rate: "₹320 - ₹450",
+  },
+  {
+    id: 2,
+    name: "Play Loft",
+    location: "Aurora Boulevard, Santa Mesa",
+    rate: "₹300 - ₹430",
+  },
+  {
+    id: 3,
+    name: "CinemaOne",
+    location: "A. Cruz, Pasay City",
+    rate: "₹280 - ₹400",
+  },
+];
+
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<"now_showing" | "coming_soon">("now_showing");
 
@@ -76,6 +98,20 @@ export default function HomeScreen() {
           priority
         />
       </div>
+
+      {/* Search Icon: top: 39px, right: 29px */}
+      <button
+        onClick={() => console.log("Search clicked")}
+        className="absolute top-[39px] right-[29px] w-[28px] h-[28px] z-20 cursor-pointer flex items-center justify-center"
+      >
+        <Image
+          src="/assets/Search.svg"
+          alt="Search"
+          width={28}
+          height={28}
+          priority
+        />
+      </button>
 
       {/* Tabs Container: top: 244px, left/right margins: 26px, height: 20px */}
       <div className="absolute top-[244px] left-[26px] right-[26px] h-[20px] flex items-center justify-between">
@@ -114,9 +150,9 @@ export default function HomeScreen() {
       </div>
 
       {/* Horizontal Movies List Container: top: 284px, left padding: 26px, right padding: 26px, height: 230px */}
-      <div className="absolute top-[284px] left-0 right-0 h-[230px] flex overflow-x-auto gap-[16px] pl-[26px] pr-[26px] scrollbar-none">
+      <div className="absolute top-[284px] left-0 right-0 h-[230px] flex overflow-x-auto overflow-y-hidden gap-[16px] pl-[26px] pr-[26px] scrollbar-none">
         {activeMovies.map((movie) => (
-          <div key={movie.id} className="w-[106px] h-[230px] flex flex-col shrink-0">
+          <div key={movie.id} className="w-[106px] h-[230px] flex flex-col shrink-0 overflow-hidden">
             {/* Banner Image Card: width: 106px, height: 158px, border-radius: 5px */}
             <div className="relative w-[106px] h-[158px] rounded-[5px] overflow-hidden shrink-0">
               <Image
@@ -153,6 +189,64 @@ export default function HomeScreen() {
               {/* Movie Genre/Tags: Inter 400 Regular 12px */}
               <p className="text-[12px] font-normal text-zinc-500 font-inter mt-[2px] leading-[15px] line-clamp-2">
                 {movie.genre}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Movie Theaters Title Bar: top: 539px, left/right margins: 26px, height: 20px */}
+      <div className="absolute top-[539px] left-[26px] right-[26px] h-[20px] flex items-center justify-between">
+        <h2 className="text-[16px] font-bold text-zinc-900 font-inter">Movie Theatres</h2>
+        <button
+          onClick={() => console.log("View All Theaters clicked")}
+          className="text-[#4F46E5] text-[12px] font-normal font-inter cursor-pointer"
+        >
+          View All
+        </button>
+      </div>
+
+      {/* Theaters List Container: top: 575px, left/right: 26px, bottom: 16px, scrollable */}
+      <div className="absolute top-[575px] left-[26px] right-[26px] bottom-[16px] flex flex-col gap-[8px] overflow-y-auto scrollbar-none">
+        {theaters.map((theater) => (
+          <div key={theater.id} className="w-full h-[73px] flex items-center shrink-0">
+            {/* Theater Logo: Square of 73px, border radius: 5px */}
+            <div className="w-[73px] h-[73px] rounded-[5px] overflow-hidden shrink-0 relative bg-white border border-zinc-100 flex items-center justify-center">
+              <Image
+                src="/assets/home/Hero Image.png"
+                alt={theater.name}
+                fill
+                className="object-cover opacity-80"
+              />
+            </div>
+
+            {/* Theater Details: gap of 20px from logo */}
+            <div className="ml-[20px] flex-1 flex flex-col justify-between h-full py-[1px]">
+              {/* Theater Name: Inter 600 SemiBold 14px */}
+              <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] truncate">
+                {theater.name}
+              </h3>
+
+              {/* Theater Location: Inter 400 Regular 12px, color: #64748B */}
+              <div className="flex items-center gap-[4px] mt-[1px]">
+                <svg
+                  className="w-[12px] h-[12px] text-[#64748B] shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-[15px]">
+                  {theater.location}
+                </span>
+              </div>
+
+              {/* Rate Range: Inter 600 SemiBold 14px, color: #64748B */}
+              <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none mt-[4px]">
+                {theater.rate}
               </p>
             </div>
           </div>
