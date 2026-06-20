@@ -163,7 +163,7 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
       <div className="absolute top-[331px] left-1/2 -translate-x-1/2 w-[337px] border-b border-[#CED6E0]" />
 
       {/* Theaters List Container: top 360px, left/right margins: 26px, bottom: 16px, scrollable */}
-      <div className="absolute top-[360px] left-[26px] right-[26px] bottom-[16px] flex flex-col gap-[8px] overflow-y-auto scrollbar-none">
+      <div className="absolute top-[360px] left-[26px] right-[26px] bottom-[89px] flex flex-col gap-[8px] overflow-y-auto scrollbar-none">
         {theaters.map((theater) => (
           <button
             key={theater.id}

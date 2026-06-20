@@ -24,6 +24,10 @@ import SelectSeatsScreen from "@/screens/SelectSeatsScreen";
 import BookingSummaryScreen from "@/screens/BookingSummaryScreen";
 import CheckoutScreen from "@/screens/CheckoutScreen";
 import PaymentSuccessScreen from "@/screens/PaymentSuccessScreen";
+import TicketsScreen from "@/screens/TicketsScreen";
+import FavoritesScreen from "@/screens/FavoritesScreen";
+import ProfileScreen from "@/screens/ProfileScreen";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -111,6 +115,41 @@ export default function Home() {
   };
 
   const handleCompletePayment = () => {
+    try {
+      const stored = localStorage.getItem("booked_tickets");
+      const currentTickets = stored ? JSON.parse(stored) : [];
+
+      const formatSelectedDate = (dateStr: string) => {
+        try {
+          const date = new Date(dateStr);
+          const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+          const monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+          ];
+          return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}`;
+        } catch (e) {
+          return dateStr;
+        }
+      };
+
+      const newTicket = {
+        movieTitle: selectedMovie?.title || "",
+        theaterName: selectedTheatre?.name || "",
+        formattedDate: formatSelectedDate(selectedDate),
+        time: selectedTime,
+        format: selectedFormat,
+        seats: bookedSeats,
+        price: bookedTotalPrice + 20,
+        transactionDate: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      currentTickets.unshift(newTicket);
+      localStorage.setItem("booked_tickets", JSON.stringify(currentTickets));
+    } catch (e) {
+      console.error("Failed to save ticket", e);
+    }
+
     dispatch(navigateTo("payment_success"));
   };
 
@@ -136,8 +175,8 @@ export default function Home() {
 
     const formattedDate = formatSelectedDate(selectedDate);
     const summary = `🎉 Ticket Booked Successfully! 🎉\n\n` +
-      `🎬 Movie: ${selectedMovie.title}\n` +
-      `🏛️ Theater: ${selectedTheatre.name}\n` +
+      `🎬 Movie: ${selectedMovie?.title || ""}\n` +
+      `🏛️ Theater: ${selectedTheatre?.name || ""}\n` +
       `📅 Date: ${formattedDate}\n` +
       `⏰ Time: ${selectedTime} (${selectedFormat})\n` +
       `💺 Seats: ${bookedSeats.join(", ")}\n` +
@@ -152,18 +191,18 @@ export default function Home() {
     dispatch(resetNavigation());
   };
 
+  let screenContent;
+
   if (activeView === "details" && selectedMovie) {
-    return (
+    screenContent = (
       <MovieDetailsScreen
         movie={selectedMovie}
         onClose={handleCloseDetails}
         onBookTickets={handleBookTickets}
       />
     );
-  }
-
-  if (activeView === "select_theatre" && selectedMovie) {
-    return (
+  } else if (activeView === "select_theatre" && selectedMovie) {
+    screenContent = (
       <SelectTheatreScreen
         movie={selectedMovie}
         onBack={handleBackFromTheatre}
@@ -171,10 +210,8 @@ export default function Home() {
         onSelectTheatre={handleSelectTheatre}
       />
     );
-  }
-
-  if (activeView === "select_schedule" && selectedMovie && selectedTheatre) {
-    return (
+  } else if (activeView === "select_schedule" && selectedMovie && selectedTheatre) {
+    screenContent = (
       <SelectScheduleScreen
         movie={selectedMovie}
         theater={selectedTheatre}
@@ -184,10 +221,8 @@ export default function Home() {
         onGetTickets={handleGetTickets}
       />
     );
-  }
-
-  if (activeView === "select_seats" && selectedMovie && selectedTheatre) {
-    return (
+  } else if (activeView === "select_seats" && selectedMovie && selectedTheatre) {
+    screenContent = (
       <SelectSeatsScreen
         movie={selectedMovie}
         theater={selectedTheatre}
@@ -199,10 +234,8 @@ export default function Home() {
         onConfirmBooking={handleConfirmBooking}
       />
     );
-  }
-
-  if (activeView === "booking_summary" && selectedMovie && selectedTheatre) {
-    return (
+  } else if (activeView === "booking_summary" && selectedMovie && selectedTheatre) {
+    screenContent = (
       <BookingSummaryScreen
         movie={selectedMovie}
         theater={selectedTheatre}
@@ -216,10 +249,8 @@ export default function Home() {
         onProceedToPayment={handleProceedToPayment}
       />
     );
-  }
-
-  if (activeView === "checkout" && selectedMovie && selectedTheatre) {
-    return (
+  } else if (activeView === "checkout" && selectedMovie && selectedTheatre) {
+    screenContent = (
       <CheckoutScreen
         movie={selectedMovie}
         theater={selectedTheatre}
@@ -233,10 +264,8 @@ export default function Home() {
         onCompletePayment={handleCompletePayment}
       />
     );
-  }
-
-  if (activeView === "payment_success" && selectedMovie && selectedTheatre) {
-    return (
+  } else if (activeView === "payment_success" && selectedMovie && selectedTheatre) {
+    screenContent = (
       <PaymentSuccessScreen
         movie={selectedMovie}
         theater={selectedTheatre}
@@ -248,7 +277,22 @@ export default function Home() {
         onClose={handleCloseSuccess}
       />
     );
+  } else if (activeView === "tickets") {
+    screenContent = <TicketsScreen />;
+  } else if (activeView === "favorites") {
+    screenContent = <FavoritesScreen />;
+  } else if (activeView === "profile") {
+    screenContent = <ProfileScreen />;
+  } else {
+    screenContent = <HomeScreen onSelectMovie={handleSelectMovie} />;
   }
 
-  return <HomeScreen onSelectMovie={handleSelectMovie} />;
+  return (
+    <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
+      <div className="flex-1 w-full h-full relative overflow-hidden">
+        {screenContent}
+      </div>
+      <Footer />
+    </div>
+  );
 }

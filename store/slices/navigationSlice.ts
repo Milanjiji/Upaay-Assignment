@@ -10,7 +10,10 @@ export type ActiveView =
   | "select_seats"
   | "booking_summary"
   | "checkout"
-  | "payment_success";
+  | "payment_success"
+  | "tickets"
+  | "favorites"
+  | "profile";
 
 interface NavigationState {
   activeView: ActiveView;

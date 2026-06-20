@@ -215,7 +215,7 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
       </div>
 
       {/* Theaters List Container: top: 575px, left/right: 26px, bottom: 16px, scrollable */}
-      <div className="absolute top-[575px] left-[26px] right-[26px] bottom-[16px] flex flex-col gap-[8px] overflow-y-auto scrollbar-none">
+      <div className="absolute top-[575px] left-[26px] right-[26px] bottom-[89px] flex flex-col gap-[8px] overflow-y-auto scrollbar-none">
         {theaters.map((theater) => (
           <div key={theater.id} className="w-full h-[73px] flex items-center shrink-0">
             {/* Theater Logo: Square of 73px, border radius: 5px */}
