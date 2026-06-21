@@ -148,7 +148,7 @@ export default function TicketsScreen() {
       {/* Back button: top 28px, left 26px */}
       <button
         onClick={handleBack}
-        className="absolute left-[26px] top-[28px] z-20 cursor-pointer flex items-center gap-[8px] text-zinc-900 font-semibold text-[14px] font-inter"
+        className="absolute left-6.5 top-7 z-20 cursor-pointer flex items-center gap-2 text-zinc-900 font-semibold text-[14px] font-inter"
       >
         <Image
           src="/assets/ep_back.svg"
@@ -161,10 +161,10 @@ export default function TicketsScreen() {
       </button>
 
       {/* Tabs Container: top 78px, left/right margins: 26px, height: 20px */}
-      <div className="absolute top-[78px] left-[26px] right-[26px] h-[20px] flex items-center gap-[24px]">
+      <div className="absolute top-19.5 left-6.5 right-6.5 h-5 flex items-center gap-6">
         <button
           onClick={() => setActiveTab("my_bookings")}
-          className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-[2px] ${
+          className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-0.5 ${
             activeTab === "my_bookings"
               ? "text-[#4F46E5] border-[#4F46E5]"
               : "text-[#64748B] border-transparent"
@@ -175,7 +175,7 @@ export default function TicketsScreen() {
         
         <button
           onClick={() => setActiveTab("past_bookings")}
-          className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-[2px] ${
+          className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-0.5 ${
             activeTab === "past_bookings"
               ? "text-[#4F46E5] border-[#4F46E5]"
               : "text-[#64748B] border-transparent"
@@ -186,20 +186,20 @@ export default function TicketsScreen() {
       </div>
 
       {/* Tickets List Container: top 120px, bottom 89px */}
-      <div className="absolute top-[120px] left-[26px] right-[26px] bottom-[89px] overflow-y-auto scrollbar-none flex flex-col gap-[20px] pb-[20px] items-center">
+      <div className="absolute top-30 left-6.5 right-6.5 bottom-22.25 overflow-y-auto scrollbar-none flex flex-col gap-5 pb-5 items-center">
         {loading ? (
-          <div className="w-full flex-1 flex flex-col items-center justify-center py-[80px]">
-            <div className="animate-spin rounded-full h-[40px] w-[40px] border-t-2 border-b-2 border-[#4F46E5] mb-[12px]" />
+          <div className="w-full flex-1 flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#4F46E5] mb-3" />
             <span className="text-[13px] font-medium text-[#64748B] font-inter">Loading tickets...</span>
           </div>
         ) : activeTickets.length > 0 ? (
           activeTickets.map((ticket) => (
             <div
               key={ticket._id}
-              className="w-[322px] bg-white rounded-[5px] border border-[#D9D9D9] overflow-hidden flex flex-col shrink-0"
+              className="w-80.5 bg-white rounded-[5px] border border-[#D9D9D9] overflow-hidden flex flex-col shrink-0"
             >
               {/* Movie Banner Banner: width 322px, height 169px */}
-              <div className="relative w-full h-[169px] shrink-0 bg-zinc-200">
+              <div className="relative w-full h-42.25 shrink-0 bg-zinc-200">
                 <img
                   src={ticket.movieId?.posterUrl || "/assets/home/Hero Image.png"}
                   alt={ticket.movieId?.title || "Movie Banner"}
@@ -208,36 +208,36 @@ export default function TicketsScreen() {
               </div>
 
               {/* Details Box inside card */}
-              <div className="p-[16px] flex flex-col w-full">
+              <div className="p-4 flex flex-col w-full">
                 {/* Movie Title: font Inter 700 Bold 16px */}
                 <h3 className="text-[16px] font-bold text-[#121212] font-inter leading-none">
                   {ticket.movieId?.title || "Movie Ticket"}
                 </h3>
 
                 {/* Theater & Screen & Format: (approx 20px gap) */}
-                <div className="flex justify-between items-center mt-[20px] text-[14px] font-medium text-[#121212] font-inter leading-none">
-                  <span className="truncate pr-[8px]">{ticket.theaterId?.name}</span>
+                <div className="flex justify-between items-center mt-5 text-[14px] font-medium text-[#121212] font-inter leading-none">
+                  <span className="truncate pr-2">{ticket.theaterId?.name}</span>
                   <span className="shrink-0">Screen 1 - {ticket.showtimeId?.format}</span>
                 </div>
 
                 {/* Date & Time Row: (approx 14px gap) */}
-                <div className="flex justify-between items-center mt-[14px] text-[14px] font-medium text-[#64748B] font-inter leading-none">
+                <div className="flex justify-between items-center mt-3.5 text-[14px] font-medium text-[#64748B] font-inter leading-none">
                   <span>{formatSelectedDate(ticket.showtimeId?.date)}</span>
                   <span>{ticket.showtimeId?.time}</span>
                 </div>
 
                 {/* Seats & Amount Paid Row: (approx 24px gap) */}
-                <div className="flex justify-between items-start mt-[24px]">
+                <div className="flex justify-between items-start mt-6">
                   {/* Seats Badges */}
-                  <div className="flex flex-col gap-[6px]">
+                  <div className="flex flex-col gap-1.5">
                     <span className="text-[14px] font-medium text-[#64748B] font-inter leading-none">
                       Seats:
                     </span>
-                    <div className="flex flex-wrap gap-[6px]">
+                    <div className="flex flex-wrap gap-1.5">
                       {ticket.seats.map((seat) => (
                         <span
                           key={seat}
-                          className="bg-[#64748B] text-white font-semibold text-[12px] font-inter rounded-[5px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] shrink-0"
+                          className="bg-[#64748B] text-white font-semibold text-[12px] font-inter rounded-[5px] pt-1 pr-2 pb-1 pl-2 shrink-0"
                         >
                           {seat.replace("-", "")}
                         </span>
@@ -246,7 +246,7 @@ export default function TicketsScreen() {
                   </div>
 
                   {/* Total Paid amount */}
-                  <div className="flex flex-col items-end gap-[6px]">
+                  <div className="flex flex-col items-end gap-1.5">
                     <span className="text-[14px] font-medium text-[#64748B] font-inter leading-none">
                       Amount Paid:
                     </span>
@@ -257,18 +257,18 @@ export default function TicketsScreen() {
                 </div>
 
                 {/* Transaction Info and QR Code Row: (approx 28px gap, no dotted line) */}
-                <div className="flex justify-between items-end mt-[28px]">
+                <div className="flex justify-between items-end mt-7">
                   {/* Cancel Button and Transaction Date */}
-                  <div className="flex flex-col gap-[12px] text-[12px] text-[#64748B] font-inter leading-tight items-start">
+                  <div className="flex flex-col gap-3 text-[12px] text-[#64748B] font-inter leading-tight items-start">
                     {activeTab === "my_bookings" && (
                       <button
                         onClick={() => handleCancel(ticket._id)}
-                        className="bg-[#F7F8FD] border border-[#CED6E0] rounded-[5px] px-[10px] py-[8px] text-[#ED183E] font-semibold text-[12px] font-inter cursor-pointer transition-colors hover:bg-red-50"
+                        className="bg-[#F7F8FD] border border-[#CED6E0] rounded-[5px] px-2.5 py-2 text-[#ED183E] font-semibold text-[12px] font-inter cursor-pointer transition-colors hover:bg-red-50"
                       >
                         Cancel Booking
                       </button>
                     )}
-                    <div className="flex flex-col gap-[4px]">
+                    <div className="flex flex-col gap-1">
                       <span>Transaction Date:</span>
                       <span className="font-medium">
                         {formatTransactionDate(ticket.transactionDate || ticket.createdAt)}
@@ -277,7 +277,7 @@ export default function TicketsScreen() {
                   </div>
 
                   {/* QR Code Icon */}
-                  <div className="shrink-0 relative w-[80px] h-[88px]">
+                  <div className="shrink-0 relative w-20 h-22">
                     <Image
                       src="/assets/1678237335 1.svg"
                       alt="QR Code"
@@ -290,11 +290,11 @@ export default function TicketsScreen() {
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center flex-1 py-[60px] text-center w-[322px]">
+          <div className="flex flex-col items-center justify-center flex-1 py-15 text-center w-80.5">
             {/* Cute Ticket Outline */}
-            <div className="w-[100px] h-[100px] bg-zinc-100 rounded-full flex items-center justify-center mb-[20px]">
+            <div className="w-25 h-25 bg-zinc-100 rounded-full flex items-center justify-center mb-5">
               <svg
-                className="w-[48px] h-[48px] text-zinc-400"
+                className="w-12 h-12 text-zinc-400"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
@@ -308,10 +308,10 @@ export default function TicketsScreen() {
               </svg>
             </div>
             
-            <h2 className="text-[16px] font-bold text-zinc-800 font-inter mb-[6px]">
+            <h2 className="text-[16px] font-bold text-zinc-800 font-inter mb-1.5">
               {activeTab === "my_bookings" ? "No Upcoming Bookings" : "No Past Bookings"}
             </h2>
-            <p className="text-[13px] font-normal text-zinc-500 font-inter max-w-[200px] mb-[24px] leading-relaxed">
+            <p className="text-[13px] font-normal text-zinc-500 font-inter max-w-50 mb-6 leading-relaxed">
               {activeTab === "my_bookings" 
                 ? "Once you book a movie, your upcoming tickets will show up here." 
                 : "You don't have any past theater bookings yet."}
@@ -319,7 +319,7 @@ export default function TicketsScreen() {
 
             <button
               onClick={handleBookNow}
-              className="px-[24px] py-[10px] bg-[#4F46E5] text-white text-[13px] font-bold rounded-[8px] hover:bg-[#4338ca] transition-all cursor-pointer shadow-sm shadow-[#4F46E5]/20 font-inter"
+              className="px-6 py-2.5 bg-[#4F46E5] text-white text-[13px] font-bold rounded-lg hover:bg-[#4338ca] transition-all cursor-pointer shadow-sm shadow-[#4F46E5]/20 font-inter"
             >
               Explore Movies
             </button>

@@ -77,7 +77,7 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
   return (
     <div className="w-full h-full flex flex-col bg-[#F7F8FD] overflow-y-auto scrollbar-none relative">
       {/* Hero Banner Image */}
-      <div className="relative w-full h-[220px] shrink-0">
+      <div className="relative w-full h-55 shrink-0">
         <Image
           src="/assets/home/Hero Image.png"
           alt="Hero Banner"
@@ -90,7 +90,7 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
       {/* Search Icon: top: 39px, right: 29px */}
       <button
         onClick={() => console.log("Search clicked")}
-        className="absolute top-[39px] right-[29px] w-[28px] h-[28px] z-20 cursor-pointer flex items-center justify-center"
+        className="absolute top-9.75 right-7.25 w-7 h-7 z-20 cursor-pointer flex items-center justify-center"
       >
         <Image
           src="/assets/Search.svg"
@@ -102,12 +102,12 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
       </button>
 
       {/* Tabs Container: margins, height: 20px */}
-      <div className="mt-[24px] px-[26px] h-[20px] flex items-center justify-between shrink-0">
+      <div className="mt-6 px-6.5 h-5 flex items-center justify-between shrink-0">
         {/* Left side: Now Showing & Coming Soon tabs */}
-        <div className="flex items-center gap-[24px] h-full">
+        <div className="flex items-center gap-6 h-full">
           <button
             onClick={() => setActiveTab("now_showing")}
-            className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-[2px] ${
+            className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-0.5 ${
               activeTab === "now_showing"
                 ? "text-[#4F46E5] border-[#4F46E5]"
                 : "text-[#64748B] border-transparent"
@@ -118,7 +118,7 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
           
           <button
             onClick={() => setActiveTab("coming_soon")}
-            className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-[2px] ${
+            className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-0.5 ${
               activeTab === "coming_soon"
                 ? "text-[#4F46E5] border-[#4F46E5]"
                 : "text-[#64748B] border-transparent"
@@ -144,7 +144,7 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
         onMouseLeave={handleMouseLeave}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        className="mt-[20px] h-[230px] flex overflow-x-auto overflow-y-hidden gap-[16px] pl-[26px] pr-[26px] scrollbar-none shrink-0 cursor-grab active:cursor-grabbing select-none"
+        className="mt-5 h-57.5 flex overflow-x-auto overflow-y-hidden gap-4 pl-6.5 pr-6.5 scrollbar-none shrink-0 cursor-grab active:cursor-grabbing select-none"
       >
         {loading ? (
           <div className="w-full h-full flex items-center justify-center text-[12px] text-zinc-500 font-inter font-medium">
@@ -159,10 +159,10 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
                   onSelectMovie(movie);
                 }
               }}
-              className="w-[106px] h-[230px] flex flex-col shrink-0 overflow-hidden cursor-pointer"
+              className="w-26.5 h-57.5 flex flex-col shrink-0 overflow-hidden cursor-pointer"
             >
               {/* Banner Image Card: width: 106px, height: 158px, border-radius: 5px */}
-              <div className="relative w-[106px] h-[158px] rounded-[5px] overflow-hidden shrink-0 bg-zinc-200">
+              <div className="relative w-26.5 h-39.5 rounded-[5px] overflow-hidden shrink-0 bg-zinc-200">
                 <img
                   src={movie.posterUrl || "/assets/home/Hero Image.png"}
                   alt={movie.title}
@@ -170,10 +170,10 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
                 />
                 
                 {/* Rating Tag: bottom right, height: 22px, width: 51px, bg: black, border-radius top-left: 5px */}
-                <div className="absolute bottom-0 right-0 w-[51px] h-[22px] bg-[#0B0A11]/90 rounded-tl-[5px] rounded-br-[5px] flex items-center justify-center gap-[4px] z-10">
+                <div className="absolute bottom-0 right-0 w-12.75 h-5.5 bg-[#0B0A11]/90 rounded-tl-[5px] rounded-br-[5px] flex items-center justify-center gap-1 z-10">
                   {/* White Star SVG */}
                   <svg
-                    className="w-[10px] h-[10px] fill-white"
+                    className="w-2.5 h-2.5 fill-white"
                     viewBox="0 0 24 24"
                   >
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -187,14 +187,14 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
               </div>
 
               {/* Text details area */}
-              <div className="flex flex-col mt-[8px]">
+              <div className="flex flex-col mt-2">
                 {/* Movie Title: Inter 600 SemiBold 14px */}
-                <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] line-clamp-2">
+                <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-4.5 line-clamp-2">
                   {movie.title}
                 </h3>
                 
                 {/* Movie Genre/Tags: Inter 400 Regular 12px */}
-                <p className="text-[12px] font-normal text-zinc-500 font-inter mt-[2px] leading-[15px] line-clamp-2">
+                <p className="text-[12px] font-normal text-zinc-500 font-inter mt-0.5 leading-3.75 line-clamp-2">
                   {movie.genre}
                 </p>
               </div>
@@ -208,7 +208,7 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
       </div>
 
       {/* Movie Theaters Title Bar */}
-      <div className="mt-[25px] px-[26px] h-[20px] flex items-center justify-between shrink-0">
+      <div className="mt-6.25 px-6.5 h-5 flex items-center justify-between shrink-0">
         <h2 className="text-[16px] font-bold text-zinc-900 font-inter">Movie Theatres</h2>
         <button
           onClick={() => console.log("View All Theaters clicked")}
@@ -219,16 +219,16 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
       </div>
 
       {/* Theaters List Container */}
-      <div className="mt-[16px] px-[26px] flex flex-col gap-[16px] pb-[109px] shrink-0">
+      <div className="mt-4 px-6.5 flex flex-col gap-4 pb-27.25 shrink-0">
         {loading ? (
-          <div className="w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter py-[20px]">
+          <div className="w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter py-5">
             Loading theaters...
           </div>
         ) : theaters.length > 0 ? (
           theaters.map((theater) => (
-            <div key={theater._id} className="w-full h-[73px] flex items-center shrink-0">
+            <div key={theater._id} className="w-full h-18.25 flex items-center shrink-0">
               {/* Theater Logo: Square of 73px, border radius: 5px */}
-              <div className="w-[73px] h-[73px] rounded-[5px] overflow-hidden shrink-0 relative bg-white border border-zinc-100 flex items-center justify-center">
+              <div className="w-18.25 h-18.25 rounded-[5px] overflow-hidden shrink-0 relative bg-white border border-zinc-100 flex items-center justify-center">
                 <img
                   src={theater.imageUrl || "/assets/home/Hero Image.png"}
                   alt={theater.name}
@@ -237,17 +237,17 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
               </div>
 
               {/* Theater Details: gap of 20px from logo */}
-              <div className="ml-[20px] flex-1 flex flex-col justify-between h-full py-[1px]">
-                <div className="flex flex-col gap-[4px]">
+              <div className="ml-5 flex-1 flex flex-col justify-between h-full py-px">
+                <div className="flex flex-col gap-1">
                   {/* Theater Name: Inter 600 SemiBold 14px */}
-                  <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] truncate">
+                  <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-4.5 truncate">
                     {theater.name}
                   </h3>
 
                   {/* Theater Location: Inter 400 Regular 12px, color: #64748B */}
-                  <div className="flex items-center gap-[4px]">
+                  <div className="flex items-center gap-1">
                     <svg
-                      className="w-[12px] h-[12px] text-[#64748B] shrink-0"
+                      className="w-3 h-3 text-[#64748B] shrink-0"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2.5"
@@ -256,21 +256,21 @@ export default function HomeScreen({ onSelectMovie }: HomeScreenProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-[15px]">
+                    <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-3.75">
                       {theater.location}
                     </span>
                   </div>
                 </div>
 
                 {/* Rate Range: Inter 600 SemiBold 14px, color: #64748B */}
-                <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none pb-[10px]">
+                <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none pb-2.5">
                   {theater.rateRange}
                 </p>
               </div>
             </div>
           ))
         ) : (
-          <div className="w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter py-[20px]">
+          <div className="w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter py-5">
             No theaters active.
           </div>
         )}

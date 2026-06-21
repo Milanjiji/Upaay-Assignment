@@ -33,7 +33,7 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
   if (!isHydrated) {
     return (
       <div className="w-full h-screen flex flex-col items-center justify-center bg-[#F7F8FD]">
-        <div className="animate-spin rounded-full h-[40px] w-[40px] border-t-2 border-b-2 border-[#4F46E5] mb-[12px]" />
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#4F46E5] mb-3" />
       </div>
     );
   }

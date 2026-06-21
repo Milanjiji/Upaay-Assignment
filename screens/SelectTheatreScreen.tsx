@@ -75,7 +75,7 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
       {/* Hero Banner Section: height 173px */}
-      <div className="relative w-full h-[173px] shrink-0 bg-zinc-200">
+      <div className="relative w-full h-43.25 shrink-0 bg-zinc-200">
         <img
           src={movie.posterUrl || "/assets/home/Hero Image.png"}
           alt={movie.title}
@@ -85,11 +85,11 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
         <div className="absolute inset-0 bg-[#151130B2] z-0" />
         
         {/* Title inside hero banner: top 98px */}
-        <div className="absolute top-[98px] left-[26px] right-[26px] z-10 flex flex-col">
+        <div className="absolute top-24.5 left-6.5 right-6.5 z-10 flex flex-col">
           <h1 className="text-[20px] font-bold text-white font-inter leading-tight truncate">
             {movie.title}
           </h1>
-          <p className="text-[14px] font-normal text-white font-inter mt-[4px] leading-tight opacity-90 truncate">
+          <p className="text-[14px] font-normal text-white font-inter mt-1 leading-tight opacity-90 truncate">
             {movie.genre}
           </p>
         </div>
@@ -98,7 +98,7 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
       {/* Back button: top 28px, left 26px */}
       <button
         onClick={onBack}
-        className="absolute left-[26px] top-[28px] z-20 cursor-pointer flex items-center gap-[8px] text-white font-semibold text-[14px] font-inter"
+        className="absolute left-6.5 top-7 z-20 cursor-pointer flex items-center gap-2 text-white font-semibold text-[14px] font-inter"
       >
         <Image
           src="/assets/ep_back.svg"
@@ -112,23 +112,23 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
       {/* Cancel button: top 28px, right 26px */}
       <button
         onClick={onCancel}
-        className="absolute right-[26px] top-[28px] z-20 cursor-pointer text-white font-semibold text-[14px] font-inter"
+        className="absolute right-6.5 top-7 z-20 cursor-pointer text-white font-semibold text-[14px] font-inter"
       >
         Cancel
       </button>
 
       {/* Filling Progress Bar: top 191px, left/right margins: 26px */}
-      <div className="absolute top-[191px] left-[26px] right-[26px] h-[6px] bg-[#E7E7E7] rounded-full overflow-hidden">
+      <div className="absolute top-47.75 left-6.5 right-6.5 h-1.5 bg-[#E7E7E7] rounded-full overflow-hidden">
         <div className="h-full bg-[#4F46E5] w-[20%] rounded-full" />
       </div>
 
       {/* Select Movie Theatre Title: top 216px, left: 26px */}
-      <h2 className="absolute top-[216px] left-[26px] text-[18px] font-bold text-zinc-900 font-inter leading-none">
+      <h2 className="absolute top-54 left-6.5 text-[18px] font-bold text-zinc-900 font-inter leading-none">
         Select Movie Theatre
       </h2>
 
       {/* Dates Row: top 250px, left/right margins: 46px */}
-      <div className="absolute top-[250px] left-[46px] right-[46px] flex justify-between">
+      <div className="absolute top-62.5 left-11.5 right-11.5 flex justify-between">
         {daysList.map((day) => {
           const isSelected = selectedDate === day.dateString;
           return (
@@ -145,7 +145,7 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
               {/* Day Number Box: width: 28px, height: 28px, top: 10px gap to day text, border-radius: 5px */}
               <button
                 onClick={() => setSelectedDate(day.dateString)}
-                className={`w-[28px] h-[28px] mt-[10px] rounded-[5px] border flex items-center justify-center font-semibold text-[14px] font-inter cursor-pointer transition-all duration-150 ${
+                className={`w-7 h-7 mt-2.5 rounded-[5px] border flex items-center justify-center font-semibold text-[14px] font-inter cursor-pointer transition-all duration-150 ${
                   isSelected
                     ? "bg-[#4F46E5] text-white border-[#4F46E5]"
                     : "bg-[#F7F8FD] text-[#64748B] border-[#CED6E0]"
@@ -159,12 +159,12 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
       </div>
 
       {/* Divider Bar: width 337px, top 331px */}
-      <div className="absolute top-[331px] left-1/2 -translate-x-1/2 w-[337px] border-b border-[#CED6E0]" />
+      <div className="absolute top-82.75 left-1/2 -translate-x-1/2 w-84.25 border-b border-[#CED6E0]" />
 
       {/* Theaters List Container: top 360px, left/right margins: 26px, bottom: 89px, scrollable */}
-      <div className="absolute top-[360px] left-[26px] right-[26px] bottom-[89px] flex flex-col gap-[8px] overflow-y-auto scrollbar-none">
+      <div className="absolute top-90 left-6.5 right-6.5 bottom-22.25 flex flex-col gap-2 overflow-y-auto scrollbar-none">
         {loading ? (
-          <div className="w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter py-[20px]">
+          <div className="w-full flex items-center justify-center text-[12px] text-zinc-500 font-inter py-5">
             Loading theaters...
           </div>
         ) : theaters.length > 0 ? (
@@ -172,10 +172,10 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
             <button
               key={theater._id}
               onClick={() => onSelectTheatre(theater, selectedDate)}
-              className="w-full h-[73px] flex items-center shrink-0 cursor-pointer text-left focus:outline-none"
+              className="w-full h-18.25 flex items-center shrink-0 cursor-pointer text-left focus:outline-none"
             >
               {/* Theater Logo: Square of 73px, border radius: 5px */}
-              <div className="w-[73px] h-[73px] rounded-[5px] overflow-hidden shrink-0 relative bg-white border border-zinc-100 flex items-center justify-center">
+              <div className="w-18.25 h-18.25 rounded-[5px] overflow-hidden shrink-0 relative bg-white border border-zinc-100 flex items-center justify-center">
                 <img
                   src={theater.imageUrl || "/assets/home/Hero Image.png"}
                   alt={theater.name}
@@ -184,17 +184,17 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
               </div>
 
               {/* Theater Details: gap of 20px from logo */}
-              <div className="ml-[20px] flex-1 flex flex-col justify-between h-full py-[1px]">
-                <div className="flex flex-col gap-[4px]">
+              <div className="ml-5 flex-1 flex flex-col justify-between h-full py-px">
+                <div className="flex flex-col gap-1">
                   {/* Theater Name: Inter 600 SemiBold 14px */}
-                  <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] truncate">
+                  <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-4.5 truncate">
                     {theater.name}
                   </h3>
 
                   {/* Theater Location: Inter 400 Regular 12px, color: #64748B */}
-                  <div className="flex items-center gap-[4px]">
+                  <div className="flex items-center gap-1">
                     <svg
-                      className="w-[12px] h-[12px] text-[#64748B] shrink-0"
+                      className="w-3 h-3 text-[#64748B] shrink-0"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2.5"
@@ -203,21 +203,21 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-[15px]">
+                    <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-3.75">
                       {theater.location}
                     </span>
                   </div>
                 </div>
 
                 {/* Rate Range: Inter 600 SemiBold 14px, color: #64748B */}
-                <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none pb-[10px]">
+                <p className="text-[14px] font-semibold text-[#64748B] font-inter leading-none pb-2.5">
                   {theater.rateRange}
                 </p>
               </div>
             </button>
           ))
         ) : (
-          <div className="w-full flex flex-col items-center justify-center py-[40px] text-center">
+          <div className="w-full flex flex-col items-center justify-center py-10 text-center">
             <span className="text-[13px] text-zinc-500 font-inter font-medium">
               No theaters running this movie on this date.
             </span>
