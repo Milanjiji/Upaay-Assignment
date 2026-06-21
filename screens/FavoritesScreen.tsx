@@ -69,73 +69,72 @@ export default function FavoritesScreen() {
       </div>
 
       {/* Favorites List Container */}
-      <div className="absolute top-[78px] left-[26px] right-[26px] bottom-[89px] overflow-y-auto scrollbar-none flex flex-col gap-[12px] pb-[16px]">
+      <div className="absolute top-[78px] left-[26px] right-[26px] bottom-[89px] overflow-y-auto scrollbar-none pb-[16px]">
         {loading ? (
-          <div className="flex-1 w-full h-full flex items-center justify-center text-[12px] text-zinc-500 font-inter font-medium py-[40px]">
-            Loading favorites...
+          <div className="w-full flex-1 flex flex-col items-center justify-center py-[100px]">
+            <div className="animate-spin rounded-full h-[40px] w-[40px] border-t-2 border-b-2 border-[#4F46E5] mb-[12px]" />
+            <span className="text-[13px] font-medium text-[#64748B] font-inter">Loading favorites...</span>
           </div>
         ) : favorites.length > 0 ? (
-          favorites.map((movie) => (
-            <div
-              key={movie._id}
-              className="w-full h-[96px] bg-white rounded-[10px] border border-zinc-150 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex overflow-hidden shrink-0 relative"
-            >
-              {/* Image Banner on the left (w: 80px) */}
-              <div className="w-[80px] h-full shrink-0 relative bg-zinc-100">
-                <img
-                  src={movie.posterUrl || "/assets/home/Hero Image.png"}
-                  alt={movie.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-[16px] w-full">
+            {favorites.map((movie) => (
+              <div
+                key={movie._id}
+                onClick={() => handleBookMovie(movie)}
+                className="w-full flex flex-col overflow-hidden cursor-pointer"
+              >
+                {/* Banner Image Card: aspect-[106/158], border-radius: 5px */}
+                <div className="relative w-full aspect-[106/158] rounded-[5px] overflow-hidden shrink-0 bg-zinc-200">
+                  <img
+                    src={movie.posterUrl || "/assets/home/Hero Image.png"}
+                    alt={movie.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
 
-              {/* Text/Details area on the right */}
-              <div className="flex-1 p-[12px] flex flex-col justify-between pr-[40px]">
-                <div className="flex flex-col gap-[2px]">
-                  {/* Movie Title */}
-                  <h3 className="text-[13px] font-bold text-zinc-950 font-inter leading-tight line-clamp-1">
+                  {/* Heart Toggle Button on Top-Right */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFavorite(movie._id);
+                    }}
+                    className="absolute top-[8px] right-[8px] w-[26px] h-[26px] rounded-full bg-[#0B0A11]/60 flex items-center justify-center cursor-pointer text-[#EF4444] hover:text-[#DC2626] transition-all z-20"
+                  >
+                    <svg className="w-[12px] h-[12px] fill-current" viewBox="0 0 24 24">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                    </svg>
+                  </button>
+
+                  {/* Rating Tag: bottom right, height: 22px, width: 51px, bg: black, border-radius top-left: 5px */}
+                  <div className="absolute bottom-0 right-0 w-[51px] h-[22px] bg-[#0B0A11]/90 rounded-tl-[5px] rounded-br-[5px] flex items-center justify-center gap-[4px] z-10">
+                    {/* White Star SVG */}
+                    <svg className="w-[10px] h-[10px] fill-white" viewBox="0 0 24 24">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                    {/* Rating text */}
+                    <span className="text-white text-[12px] font-semibold font-inter">
+                      {movie.rating}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Text details area */}
+                <div className="flex flex-col mt-[8px]">
+                  {/* Movie Title: Inter 600 SemiBold 14px */}
+                  <h3 className="text-[14px] font-semibold text-zinc-900 font-inter leading-[18px] line-clamp-2">
                     {movie.title}
                   </h3>
-                  
-                  {/* Genre */}
-                  <p className="text-[11px] font-normal text-zinc-500 font-inter truncate leading-none">
+
+                  {/* Movie Genre/Tags: Inter 400 Regular 12px */}
+                  <p className="text-[12px] font-normal text-zinc-500 font-inter mt-[2px] leading-[15px] line-clamp-1">
                     {movie.genre}
                   </p>
                 </div>
-
-                {/* Rating & Action */}
-                <div className="flex items-center justify-between">
-                  {/* Rating */}
-                  <div className="flex items-center gap-[3px] text-zinc-800 text-[11px] font-semibold font-inter">
-                    <svg className="w-[11px] h-[11px] fill-zinc-800" viewBox="0 0 24 24">
-                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                    </svg>
-                    <span>{movie.rating}</span>
-                  </div>
-
-                  {/* Book Now Button */}
-                  <button
-                    onClick={() => handleBookMovie(movie)}
-                    className="px-[12px] py-[5px] bg-[#4F46E5] text-white text-[11px] font-bold rounded cursor-pointer hover:bg-[#4338ca] transition-colors font-inter"
-                  >
-                    Book Now
-                  </button>
-                </div>
               </div>
-
-              {/* Remove Favorite Button */}
-              <button
-                onClick={() => handleRemoveFavorite(movie._id)}
-                className="absolute top-[8px] right-[8px] w-[20px] h-[20px] rounded-full hover:bg-zinc-50 flex items-center justify-center cursor-pointer text-zinc-400 hover:text-zinc-600 transition-colors"
-              >
-                <svg className="w-[12px] h-[12px]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center flex-1 py-[60px] text-center">
+          <div className="flex flex-col items-center justify-center flex-1 py-[60px] text-center w-full">
             <div className="w-[100px] h-[100px] bg-zinc-100 rounded-full flex items-center justify-center mb-[20px]">
               <svg className="w-[48px] h-[48px] text-zinc-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
