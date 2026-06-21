@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Showtime = require("../models/Showtime");
-const { verifyAdmin } = require("../middleware/auth");
+const { verifyAdmin, verifyUser } = require("../middleware/auth");
+const { redis } = require("../config/redis");
 
 // GET /api/showtimes - list all showtimes with filters
 router.get("/", async (req, res) => {
@@ -34,10 +35,111 @@ router.get("/:id", async (req, res) => {
     if (!showtime) {
       return res.status(404).json({ message: "Showtime not found" });
     }
-    res.json(showtime);
+
+    const currentUserId = req.headers["x-user-id"] || req.headers["authorization"];
+
+    // Fetch active Redis holds for this showtime
+    const holdKeys = await redis.keys(`hold:showtime:${req.params.id}:seat:*`);
+    const holdUserMap = new Map();
+
+    if (holdKeys.length > 0) {
+      const holdValues = await redis.mget(holdKeys);
+      holdKeys.forEach((key, idx) => {
+        const parts = key.split(":");
+        const seatNumber = parts[parts.length - 1];
+        const holderId = holdValues[idx];
+        holdUserMap.set(seatNumber, holderId);
+      });
+    }
+
+    const showtimeObj = showtime.toObject();
+    if (showtimeObj.seats) {
+      showtimeObj.seats = showtimeObj.seats.map(seat => {
+        const holderId = holdUserMap.get(seat.seatNumber);
+        if (holderId && holderId !== currentUserId) {
+          seat.status = "occupied";
+        }
+        return seat;
+      });
+    }
+
+    res.json(showtimeObj);
   } catch (error) {
     console.error("Fetch showtime details error:", error);
     res.status(500).json({ message: "Failed to fetch showtime details" });
+  }
+});
+
+// POST /api/showtimes/:id/hold - Temporarily lock seats in Redis for 5 minutes (Protected)
+router.post("/:id/hold", verifyUser, async (req, res) => {
+  try {
+    const showtimeId = req.params.id;
+    const { seats } = req.body;
+    const userId = req.user._id.toString();
+
+    if (!seats || !Array.isArray(seats) || seats.length === 0) {
+      return res.status(400).json({ message: "No seats specified for hold" });
+    }
+
+    const showtime = await Showtime.findById(showtimeId);
+    if (!showtime) {
+      return res.status(404).json({ message: "Showtime not found" });
+    }
+
+    // 1. Verify seat availability in MongoDB
+    const seatMap = new Map(showtime.seats.map(s => [s.seatNumber, s]));
+    for (const seatNum of seats) {
+      const seat = seatMap.get(seatNum);
+      if (!seat) {
+        return res.status(400).json({ message: `Seat ${seatNum} is invalid for this showtime` });
+      }
+      if (seat.status === "occupied") {
+        return res.status(409).json({ message: `Seat ${seatNum.replace("-", "")} is already occupied` });
+      }
+    }
+
+    // 2. Check active Redis holds by other users
+    for (const seatNum of seats) {
+      const holdKey = `hold:showtime:${showtimeId}:seat:${seatNum}`;
+      const holderId = await redis.get(holdKey);
+      if (holderId && holderId !== userId) {
+        return res.status(409).json({ message: "One or more selected seats are temporarily held by another user. Please choose different seats." });
+      }
+    }
+
+    // 3. Save hold keys in Redis with 5-minute expiry (300 seconds)
+    for (const seatNum of seats) {
+      const holdKey = `hold:showtime:${showtimeId}:seat:${seatNum}`;
+      await redis.set(holdKey, userId, "EX", 300);
+    }
+
+    res.json({ message: "Seats held successfully" });
+  } catch (error) {
+    console.error("Hold seats error:", error);
+    res.status(500).json({ message: "Failed to hold seats" });
+  }
+});
+
+// POST /api/showtimes/:id/release - Release temporarily held seats from Redis (Protected)
+router.post("/:id/release", verifyUser, async (req, res) => {
+  try {
+    const showtimeId = req.params.id;
+    const { seats } = req.body;
+
+    if (!seats || !Array.isArray(seats) || seats.length === 0) {
+      return res.status(400).json({ message: "No seats specified for release" });
+    }
+
+    // Delete hold keys from Redis
+    for (const seatNum of seats) {
+      const holdKey = `hold:showtime:${showtimeId}:seat:${seatNum}`;
+      await redis.del(holdKey);
+    }
+
+    res.json({ message: "Seats released successfully" });
+  } catch (error) {
+    console.error("Release seats error:", error);
+    res.status(500).json({ message: "Failed to release seats" });
   }
 });
 

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 interface Movie {
   _id: string;
@@ -44,6 +46,34 @@ export default function CheckoutScreen({
   onCancel,
   onCompletePayment,
 }: CheckoutScreenProps) {
+  const showtimeId = useSelector((state: RootState) => state.booking.selectedShowtimeId);
+  const reduxToken = useSelector((state: RootState) => state.auth.token);
+  const getCookieToken = () => {
+    if (typeof document === "undefined") return "";
+    const cookies = document.cookie.split(";");
+    const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+    return tokenCookie ? tokenCookie.split("=")[1] : "";
+  };
+  const token = reduxToken || getCookieToken();
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  const handleReleaseAndNavigate = async (navigateCallback: () => void) => {
+    try {
+      await fetch(`${API_URL}/api/showtimes/${showtimeId}/release`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": token || "",
+        },
+        body: JSON.stringify({ seats }),
+      });
+    } catch (err) {
+      console.error("Failed to release seats hold in background:", err);
+    }
+    navigateCallback();
+  };
+
   const bookingFee = 20;
   const grandTotal = totalPrice + bookingFee;
 
@@ -127,7 +157,7 @@ export default function CheckoutScreen({
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
       {/* Back button: top 28px, left 26px */}
       <button
-        onClick={onBack}
+        onClick={() => handleReleaseAndNavigate(onBack)}
         className="absolute left-[26px] top-[28px] z-20 cursor-pointer flex items-center gap-[8px] text-zinc-900 font-semibold text-[14px] font-inter"
       >
         <Image
@@ -142,7 +172,7 @@ export default function CheckoutScreen({
 
       {/* Cancel button: top 28px, right 26px */}
       <button
-        onClick={onCancel}
+        onClick={() => handleReleaseAndNavigate(onCancel)}
         className="absolute right-[26px] top-[28px] z-20 cursor-pointer text-zinc-900 font-semibold text-[14px] font-inter"
       >
         Cancel

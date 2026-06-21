@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Showtime = require("../models/Showtime");
 const { verifyUser, verifyAdmin } = require("../middleware/auth");
-const { redlock } = require("../config/redis");
+const { redlock, redis } = require("../config/redis");
 
 // GET /api/bookings - list all bookings (Admin only)
 router.get("/", verifyAdmin, async (req, res) => {
@@ -110,6 +110,17 @@ router.post("/", verifyUser, async (req, res) => {
     }], { session });
 
     await session.commitTransaction();
+
+    // Delete temporary Redis hold keys for successfully booked seats
+    try {
+      for (const seatNum of seats) {
+        const holdKey = `hold:showtime:${showtimeId}:seat:${seatNum}`;
+        await redis.del(holdKey);
+      }
+    } catch (redisErr) {
+      console.error("Failed to delete hold keys on booking complete:", redisErr);
+    }
+
     res.status(201).json({ message: "Booking placed successfully", booking: newBookings[0] });
   } catch (error) {
     await session.abortTransaction();
@@ -121,7 +132,11 @@ router.post("/", verifyUser, async (req, res) => {
       try {
         await lock.release();
       } catch (err) {
-        console.error("Failed to release lock:", err);
+        // Redlock throws an ExecutionError if the lock has already expired naturally by the time we release it.
+        // This is safe to ignore since the resource is already unlocked in Redis.
+        if (err.name !== "ExecutionError") {
+          console.error("Failed to release lock:", err);
+        }
       }
     }
   }

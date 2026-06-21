@@ -46,6 +46,16 @@ export default function SelectSeatsScreen({
 
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isHolding, setIsHolding] = useState(false);
+
+  const reduxToken = useSelector((state: RootState) => state.auth.token);
+  const getCookieToken = () => {
+    if (typeof document === "undefined") return "";
+    const cookies = document.cookie.split(";");
+    const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+    return tokenCookie ? tokenCookie.split("=")[1] : "";
+  };
+  const token = reduxToken || getCookieToken();
 
   // Drag-to-scroll references
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -55,10 +65,11 @@ export default function SelectSeatsScreen({
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-  // Fetch showtime details and layouts using SWR
-  const { data: showtime, error, isLoading, isValidating } = useSWR<any>(
+  // Fetch showtime details and layouts using SWR with 5-second polling interval
+  const { data: showtime, error, isLoading, isValidating, mutate } = useSWR<any>(
     showtimeId ? `${API_URL}/api/showtimes/${showtimeId}` : null,
-    fetcher
+    fetcher,
+    { refreshInterval: 5000 }
   );
 
   // Sync isInitialLoading state when showtime details fetch and validate completes
@@ -124,6 +135,36 @@ export default function SelectSeatsScreen({
   };
 
   const totalPrice = selectedSeats.length * ticketPrice;
+
+  const handleConfirmSummaryClick = async () => {
+    if (selectedSeats.length === 0 || isHolding) return;
+    setIsHolding(true);
+    
+    try {
+      const res = await fetch(`${API_URL}/api/showtimes/${showtimeId}/hold`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": token || "",
+        },
+        body: JSON.stringify({ seats: selectedSeats }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Some seats were just held by another customer. Please choose other seats.");
+      }
+
+      // Success - proceed to booking summary/checkout
+      onConfirmBooking(selectedSeats, totalPrice);
+    } catch (err: any) {
+      alert(err.message || "Failed to hold seats. Please try selecting other seats.");
+      // Refresh seat matrix immediately
+      mutate();
+    } finally {
+      setIsHolding(false);
+    }
+  };
 
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
@@ -287,15 +328,25 @@ export default function SelectSeatsScreen({
 
           {/* View Booking Summary Button: top 700px */}
           <button
-            onClick={() => onConfirmBooking(selectedSeats, totalPrice)}
-            disabled={selectedSeats.length === 0}
+            onClick={handleConfirmSummaryClick}
+            disabled={selectedSeats.length === 0 || isHolding}
             className={`absolute top-[700px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter transition-all ${
-              selectedSeats.length === 0
+              selectedSeats.length === 0 || isHolding
                 ? "bg-zinc-300 text-zinc-500 cursor-not-allowed"
                 : "bg-[#4F46E5] text-[#FFFFFF] hover:bg-[#4338ca]"
             }`}
           >
-            View Booking Summary
+            {isHolding ? (
+              <div className="flex items-center gap-[8px]">
+                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Locking Seats...
+              </div>
+            ) : (
+              "View Booking Summary"
+            )}
           </button>
         </>
       )}
