@@ -63,6 +63,15 @@ export default function AdminPage() {
   // Token helper
   const [token, setToken] = useState<string>("");
 
+  // Operation loading states
+  const [isSubmittingMovie, setIsSubmittingMovie] = useState(false);
+  const [isDeletingMovie, setIsDeletingMovie] = useState<string | null>(null);
+  const [isSubmittingTheater, setIsSubmittingTheater] = useState(false);
+  const [isDeletingTheater, setIsDeletingTheater] = useState<string | null>(null);
+  const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState<string | null>(null);
+  const [isCancellingBooking, setIsCancellingBooking] = useState<string | null>(null);
+
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   // SWR global lists caching
@@ -253,6 +262,8 @@ export default function AdminPage() {
 
   const handleCreateMovie = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingMovie) return;
+    setIsSubmittingMovie(true);
     try {
       const payload = {
         ...movieForm,
@@ -302,11 +313,15 @@ export default function AdminPage() {
       mutateMovies();
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setIsSubmittingMovie(false);
     }
   };
 
   const handleDeleteMovie = async (id: string) => {
+    if (isDeletingMovie) return;
     if (!confirm("Are you sure you want to delete this movie?")) return;
+    setIsDeletingMovie(id);
     try {
       const res = await fetch(`${API_URL}/api/movies/${id}`, {
         method: "DELETE",
@@ -317,6 +332,8 @@ export default function AdminPage() {
       mutateMovies();
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setIsDeletingMovie(null);
     }
   };
 
@@ -353,6 +370,8 @@ export default function AdminPage() {
 
   const handleCreateTheater = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingTheater) return;
+    setIsSubmittingTheater(true);
     try {
       const payload = {
         ...theaterForm,
@@ -393,11 +412,15 @@ export default function AdminPage() {
       mutateTheaters();
     } catch (e: any) {
       alert(e.message);
+    } finally {
+      setIsSubmittingTheater(false);
     }
   };
 
   const handleDeleteTheater = async (id: string) => {
+    if (isDeletingTheater) return;
     if (!confirm("Are you sure you want to delete this theater?")) return;
+    setIsDeletingTheater(id);
     try {
       const res = await fetch(`${API_URL}/api/theaters/${id}`, {
         method: "DELETE",
@@ -408,16 +431,20 @@ export default function AdminPage() {
       mutateTheaters();
     } catch (e: any) {
       alert(e.message);
+    } finally {
+      setIsDeletingTheater(null);
     }
   };
 
   // Schedule Actions
   const handleCreateSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingSchedule) return;
     if (!scheduleForm.movieId || !scheduleForm.theaterId || !scheduleForm.date) {
       alert("Please fill all required schedule details.");
       return;
     }
+    setIsSubmittingSchedule(true);
     try {
       const res = await fetch(`${API_URL}/api/showtimes`, {
         method: "POST",
@@ -438,11 +465,15 @@ export default function AdminPage() {
       mutateSchedules();
     } catch (e: any) {
       alert(e.message);
+    } finally {
+      setIsSubmittingSchedule(false);
     }
   };
 
   const handleDeleteSchedule = async (id: string) => {
+    if (isDeletingSchedule) return;
     if (!confirm("Cancel this showtime slot?")) return;
+    setIsDeletingSchedule(id);
     try {
       const res = await fetch(`${API_URL}/api/showtimes/${id}`, {
         method: "DELETE",
@@ -453,12 +484,16 @@ export default function AdminPage() {
       mutateSchedules();
     } catch (e: any) {
       alert(e.message);
+    } finally {
+      setIsDeletingSchedule(null);
     }
   };
 
   // Booking Actions
   const handleCancelBooking = async (id: string) => {
+    if (isCancellingBooking) return;
     if (!confirm("Are you sure you want to cancel this booking and free the seats?")) return;
+    setIsCancellingBooking(id);
     try {
       const res = await fetch(`${API_URL}/api/bookings/${id}`, {
         method: "DELETE",
@@ -470,6 +505,8 @@ export default function AdminPage() {
       mutateSchedules();
     } catch (e: any) {
       alert(e.message);
+    } finally {
+      setIsCancellingBooking(null);
     }
   };
 
@@ -574,8 +611,9 @@ export default function AdminPage() {
                   </div>
                   <div className="flex items-center gap-[6px] shrink-0">
                     <button
+                      disabled={!!isDeletingMovie}
                       onClick={() => handleEditMovie(movie)}
-                      className="p-[6px] bg-zinc-50 hover:bg-zinc-100 rounded text-zinc-600 border border-zinc-200 cursor-pointer transition-colors flex items-center justify-center"
+                      className="p-[6px] bg-zinc-50 hover:bg-zinc-100 rounded text-zinc-600 border border-zinc-200 cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Edit Movie"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
@@ -583,13 +621,18 @@ export default function AdminPage() {
                       </svg>
                     </button>
                     <button
+                      disabled={!!isDeletingMovie}
                       onClick={() => handleDeleteMovie(movie._id)}
-                      className="p-[6px] bg-rose-50 hover:bg-rose-100 rounded text-rose-600 border border-rose-150 cursor-pointer transition-colors flex items-center justify-center"
+                      className="p-[6px] bg-rose-50 hover:bg-rose-100 rounded text-rose-600 border border-rose-150 cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Delete Movie"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
+                      {isDeletingMovie === movie._id ? (
+                        <div className="animate-spin rounded-full h-[14px] w-[14px] border-t border-b border-rose-600" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -625,8 +668,9 @@ export default function AdminPage() {
                   </div>
                   <div className="flex items-center gap-[6px] shrink-0">
                     <button
+                      disabled={!!isDeletingTheater}
                       onClick={() => handleEditTheater(theater)}
-                      className="p-[6px] bg-zinc-50 hover:bg-zinc-100 rounded text-zinc-600 border border-zinc-200 cursor-pointer transition-colors flex items-center justify-center"
+                      className="p-[6px] bg-zinc-50 hover:bg-zinc-100 rounded text-zinc-600 border border-zinc-200 cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Edit Theater"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
@@ -634,13 +678,18 @@ export default function AdminPage() {
                       </svg>
                     </button>
                     <button
+                      disabled={!!isDeletingTheater}
                       onClick={() => handleDeleteTheater(theater._id)}
-                      className="p-[6px] bg-rose-50 hover:bg-rose-100 rounded text-rose-600 border border-rose-150 cursor-pointer transition-colors flex items-center justify-center"
+                      className="p-[6px] bg-rose-50 hover:bg-rose-100 rounded text-rose-600 border border-rose-150 cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Delete Theater"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
+                      {isDeletingTheater === theater._id ? (
+                        <div className="animate-spin rounded-full h-[14px] w-[14px] border-t border-b border-rose-600" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[14px] h-[14px]">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -672,10 +721,15 @@ export default function AdminPage() {
                       </p>
                     </div>
                     <button
+                      disabled={!!isDeletingSchedule}
                       onClick={() => handleDeleteSchedule(slot._id)}
-                      className="p-[5px] bg-rose-50 hover:bg-rose-100 rounded text-rose-600 text-[10px] font-bold cursor-pointer transition-colors"
+                      className="p-[5px] bg-rose-50 hover:bg-rose-100 rounded text-rose-600 text-[10px] font-bold cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[50px] flex items-center justify-center"
                     >
-                      Delete
+                      {isDeletingSchedule === slot._id ? (
+                        <div className="animate-spin rounded-full h-[10px] w-[10px] border-t border-b border-rose-600" />
+                      ) : (
+                        "Delete"
+                      )}
                     </button>
                   </div>
                   
@@ -706,10 +760,15 @@ export default function AdminPage() {
                     </p>
                   </div>
                   <button
+                    disabled={!!isCancellingBooking}
                     onClick={() => handleCancelBooking(b._id)}
-                    className="px-[6px] py-[4px] bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold rounded cursor-pointer transition-colors"
+                    className="px-[6px] py-[4px] bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold rounded cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[80px] flex items-center justify-center"
                   >
-                    Cancel Ticket
+                    {isCancellingBooking === b._id ? (
+                      <div className="animate-spin rounded-full h-[10px] w-[10px] border-t border-b border-rose-600" />
+                    ) : (
+                      "Cancel Ticket"
+                    )}
                   </button>
                 </div>
 
@@ -920,9 +979,20 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              className="h-[40px] bg-[#4F46E5] text-white text-[13px] font-bold rounded cursor-pointer transition-colors mt-[8px]"
+              disabled={isSubmittingMovie}
+              className="h-[40px] bg-[#4F46E5] text-white text-[13px] font-bold rounded cursor-pointer transition-colors mt-[8px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-[8px]"
             >
-              {editingMovieId ? "Update Movie" : "Save Movie record"}
+              {isSubmittingMovie ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {editingMovieId ? "Updating Movie..." : "Saving Movie..."}
+                </>
+              ) : (
+                editingMovieId ? "Update Movie" : "Save Movie record"
+              )}
             </button>
           </form>
         </div>
@@ -1036,9 +1106,20 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              className="h-[40px] bg-[#4F46E5] text-white text-[13px] font-bold rounded cursor-pointer transition-colors mt-[8px]"
+              disabled={isSubmittingTheater}
+              className="h-[40px] bg-[#4F46E5] text-white text-[13px] font-bold rounded cursor-pointer transition-colors mt-[8px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-[8px]"
             >
-              {editingTheaterId ? "Update Theater" : "Save Theater record"}
+              {isSubmittingTheater ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {editingTheaterId ? "Updating Theater..." : "Saving Theater..."}
+                </>
+              ) : (
+                editingTheaterId ? "Update Theater" : "Save Theater record"
+              )}
             </button>
           </form>
         </div>
@@ -1151,9 +1232,20 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              className="h-[40px] bg-[#4F46E5] text-white text-[13px] font-bold rounded cursor-pointer transition-colors mt-[8px]"
+              disabled={isSubmittingSchedule}
+              className="h-[40px] bg-[#4F46E5] text-white text-[13px] font-bold rounded cursor-pointer transition-colors mt-[8px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-[8px]"
             >
-              Add Showtime Slot
+              {isSubmittingSchedule ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Scheduling Showtime...
+                </>
+              ) : (
+                "Add Showtime Slot"
+              )}
             </button>
           </form>
         </div>
