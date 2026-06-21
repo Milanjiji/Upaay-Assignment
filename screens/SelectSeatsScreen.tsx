@@ -114,6 +114,10 @@ export default function SelectSeatsScreen({
       if (prev.includes(seatId)) {
         return prev.filter((id) => id !== seatId);
       } else {
+        if (prev.length >= 10) {
+          alert("You can select a maximum of 10 seats per transaction.");
+          return prev;
+        }
         return [...prev, seatId];
       }
     });

@@ -46,6 +46,10 @@ router.post("/", verifyUser, async (req, res) => {
       return res.status(400).json({ message: "Required booking information is missing" });
     }
 
+    if (seats.length > 10) {
+      return res.status(400).json({ message: "You can select a maximum of 10 seats per transaction." });
+    }
+
     const showtime = await Showtime.findById(showtimeId);
     if (!showtime) {
       return res.status(404).json({ message: "Showtime session not found" });
