@@ -15,7 +15,8 @@ export function middleware(request: NextRequest) {
   }
 
   // 2. If user IS authenticated and tries to access /login or /register -> redirect to / (homepage)
-  if (token && isPublicPath) {
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+  if (token && isAuthPage) {
     const homeUrl = new URL("/", request.url);
     return NextResponse.redirect(homeUrl);
   }

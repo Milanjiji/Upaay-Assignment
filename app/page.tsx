@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useRouter } from "next/navigation";
 import { mutate } from "swr";
 import { RootState } from "@/store";
 import {
@@ -33,6 +34,7 @@ import Footer from "@/components/Footer";
 
 export default function Home() {
   const dispatch = useDispatch();
+  const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
   const [isBooking, setIsBooking] = useState(false);
 
@@ -59,7 +61,18 @@ export default function Home() {
   }, [dispatch, API_URL]);
 
   const activeView = useSelector((state: RootState) => state.navigation.activeView);
+  const user = useSelector((state: RootState) => state.auth.user);
   const selectedMovie = useSelector((state: RootState) => state.booking.selectedMovie);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("redirect") === "select_theatre" && user) {
+        dispatch(navigateTo("select_theatre"));
+        window.history.replaceState(null, "", "/");
+      }
+    }
+  }, [user, dispatch]);
   const selectedTheatre = useSelector((state: RootState) => state.booking.selectedTheatre);
   const selectedDate = useSelector((state: RootState) => state.booking.selectedDate);
   const selectedTime = useSelector((state: RootState) => state.booking.selectedTime);
@@ -79,6 +92,11 @@ export default function Home() {
   };
 
   const handleBookTickets = () => {
+    if (!user) {
+      router.push("/login?redirect=select_theatre");
+      return;
+    }
+
     dispatch(navigateTo("select_theatre"));
   };
 

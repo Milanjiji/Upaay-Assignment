@@ -25,7 +25,10 @@ export default function ProfileScreen() {
           Please log in to view your profile and manage tickets.
         </span>
         <button
-          onClick={() => { window.location.href = "/login"; }}
+          onClick={() => { 
+            dispatch(resetNavigation());
+            window.location.href = "/login"; 
+          }}
           className="mt-[32px] w-full h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
         >
           Login

@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [redirectPath, setRedirectPath] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get("redirect");
+      if (redirect) {
+        setRedirectPath(redirect);
+      }
+    }
+  }, []);
   
   // Form field states
   const [name, setName] = useState("");
@@ -70,7 +81,8 @@ export default function LoginPage() {
 
       // Set auth cookie (Expires in 1 day)
       const tokenValue = data.user.id;
-      document.cookie = `token=${tokenValue}; path=/; max-age=86400; SameSite=Lax; Secure`;
+      const secureFlag = window.location.protocol === "https:" ? "Secure;" : "";
+      document.cookie = `token=${tokenValue}; path=/; max-age=86400; SameSite=Lax; ${secureFlag}`;
 
       setMessage({ text: activeTab === "login" ? "Login successful! Redirecting..." : "Registration successful! Redirecting...", type: "success" });
       
@@ -82,7 +94,11 @@ export default function LoginPage() {
 
       // Redirect to homepage after a brief delay
       setTimeout(() => {
-        window.location.href = "/";
+        if (redirectPath) {
+          window.location.href = `/?redirect=${redirectPath}`;
+        } else {
+          window.location.href = "/";
+        }
       }, 1000);
     } catch (err: any) {
       setMessage({ text: err.message || "Failed to connect to server", type: "error" });
