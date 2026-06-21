@@ -52,6 +52,7 @@ export default function CheckoutScreen({
   const [cardNumber, setCardNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [cvc, setCvc] = useState("");
+  const [walletPhone, setWalletPhone] = useState("");
   const [saveDetails, setSaveDetails] = useState(false);
 
   // Load saved card details on mount
@@ -73,6 +74,32 @@ export default function CheckoutScreen({
 
   const handlePaymentSubmit = () => {
     if (paymentMethod === "card") {
+      if (!nameOnCard.trim()) {
+        alert("Invalid input: Name on card cannot be empty.");
+        return;
+      }
+      
+      const strippedCardNumber = cardNumber.replace(/\s+/g, "");
+      if (!/^\d{16}$/.test(strippedCardNumber)) {
+        alert("Invalid input: Card number must be exactly 16 digits.");
+        return;
+      }
+
+      if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryDate)) {
+        alert("Invalid input: Expiry date must be in MM/YY format.");
+        return;
+      }
+
+      if (!/^\d{3,4}$/.test(cvc)) {
+        alert("Invalid input: CVC/CVV must be 3 or 4 digits.");
+        return;
+      }
+
+      if (strippedCardNumber === "0000000000000000") {
+        alert("Payment Declined");
+        return;
+      }
+
       try {
         if (saveDetails) {
           localStorage.setItem(
@@ -85,7 +112,14 @@ export default function CheckoutScreen({
       } catch (e) {
         console.error("Failed to save card details", e);
       }
+    } else {
+      const strippedPhone = walletPhone.replace(/\D/g, "");
+      if (!/^\d{10}$/.test(strippedPhone)) {
+        alert("Invalid input: Phone number must be exactly 10 digits.");
+        return;
+      }
     }
+
     onCompletePayment({ nameOnCard, cardNumber });
   };
 
@@ -269,10 +303,19 @@ export default function CheckoutScreen({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-[40px] text-center bg-white rounded-[5px] border border-[#CED6E0] w-[338px]">
-            <span className="text-[14px] font-normal text-[#64748B] font-inter">
-              Please enter your phone number at checkout.
-            </span>
+          <div className="flex flex-col">
+            <div className="flex flex-col gap-[8px]">
+              <label className="text-[14px] font-normal text-zinc-900 font-inter leading-none">
+                Phone number
+              </label>
+              <input
+                type="tel"
+                placeholder="10-digit mobile number"
+                value={walletPhone}
+                onChange={(e) => setWalletPhone(e.target.value)}
+                className="w-[338px] h-[37px] bg-white border border-[#CED6E0] rounded-[5px] px-[12px] text-[14px] text-zinc-900 placeholder-[#64748B] font-inter focus:outline-none focus:border-[#4F46E5]"
+              />
+            </div>
           </div>
         )}
       </div>
