@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { resetNavigation } from "@/store/slices/navigationSlice";
 import { resetBooking } from "@/store/slices/bookingSlice";
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import { fetcher } from "@/store/fetcher";
 import Image from "next/image";
 
@@ -12,7 +12,7 @@ interface Ticket {
   _id: string;
   movieId: { title: string; genre: string; posterUrl: string; formats: string[]; rating: number; pgRating: string };
   theaterId: { name: string; location: string };
-  showtimeId: { date: string; time: string; format: string };
+  showtimeId: { _id: string; date: string; time: string; format: string };
   seats: string[];
   totalPrice: number;
   transactionDate: string;
@@ -60,6 +60,12 @@ export default function TicketsScreen() {
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to cancel booking");
+      }
+
+      // Invalidate the specific showtime's seat layout cache immediately
+      const cancelledTicket = tickets.find(t => t._id === bookingId);
+      if (cancelledTicket?.showtimeId?._id) {
+        await globalMutate(`${API_URL}/api/showtimes/${cancelledTicket.showtimeId._id}`);
       }
 
       alert("Booking cancelled. Seats have been freed.");
