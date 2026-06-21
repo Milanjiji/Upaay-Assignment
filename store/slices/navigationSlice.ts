@@ -45,8 +45,11 @@ export const navigationSlice = createSlice({
       state.activeView = "home";
       state.history = [];
     },
+    rehydrateNavigation: (state, action: PayloadAction<NavigationState>) => {
+      return action.payload;
+    },
   },
 });
 
-export const { navigateTo, goBack, resetNavigation } = navigationSlice.actions;
+export const { navigateTo, goBack, resetNavigation, rehydrateNavigation } = navigationSlice.actions;
 export default navigationSlice.reducer;

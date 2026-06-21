@@ -90,6 +90,9 @@ export const bookingSlice = createSlice({
       state.bookedSeats = [];
       state.bookedTotalPrice = 0;
     },
+    rehydrateBooking: (state, action: PayloadAction<BookingState>) => {
+      return action.payload;
+    },
   },
 });
 
@@ -100,6 +103,7 @@ export const {
   toggleSeat,
   setBookedSeatsAndPrice,
   resetBooking,
+  rehydrateBooking,
 } = bookingSlice.actions;
 
 export default bookingSlice.reducer;
