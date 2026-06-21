@@ -82,7 +82,7 @@ export default function LoginPage() {
 
       // Redirect to homepage after a brief delay
       setTimeout(() => {
-        router.push("/");
+        window.location.href = "/";
       }, 1000);
     } catch (err: any) {
       setMessage({ text: err.message || "Failed to connect to server", type: "error" });

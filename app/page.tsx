@@ -130,6 +130,15 @@ export default function Home() {
   };
 
   const handleProceedToPayment = () => {
+    const cookies = document.cookie.split(";");
+    const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+    const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
+    
+    if (!tokenVal) {
+      window.location.href = "/login";
+      return;
+    }
+
     dispatch(navigateTo("checkout"));
   };
 

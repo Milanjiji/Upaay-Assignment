@@ -12,6 +12,28 @@ export default function ProfileScreen() {
   const router = useRouter();
   const user = useSelector((state: RootState) => state.auth.user);
 
+  if (!user) {
+    return (
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-[#F7F8FD] px-[26px]">
+        <div className="w-[100px] h-[100px] rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 text-[32px] font-bold shadow-sm font-inter shrink-0 mb-[20px]">
+          ?
+        </div>
+        <h2 className="text-[16px] font-semibold text-zinc-900 font-inter leading-tight text-center">
+          No user logged in
+        </h2>
+        <span className="text-[12px] font-normal text-[#64748B] font-inter text-center w-full mt-[6px]">
+          Please log in to view your profile and manage tickets.
+        </span>
+        <button
+          onClick={() => { window.location.href = "/login"; }}
+          className="mt-[32px] w-full h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
+        >
+          Login
+        </button>
+      </div>
+    );
+  }
+
   // Fallback details if Redux slice isn't hydrated yet
   const displayName = user?.name || "Hiring Manager";
   const displayEmail = user?.email || "hiring@upaay.creative";
