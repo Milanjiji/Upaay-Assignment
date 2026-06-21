@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import useSWR from "swr";
 import { fetcher } from "@/store/fetcher";
@@ -58,10 +58,45 @@ export default function SelectScheduleScreen({
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   // Fetch showtime slots using SWR
-  const { data: slots = EMPTY_ARRAY, isLoading: loading } = useSWR<ShowtimeSlot[]>(
+  const { data: rawSlots = EMPTY_ARRAY, isLoading: loading } = useSWR<ShowtimeSlot[]>(
     movie?._id && theater?._id ? `${API_URL}/api/showtimes?movieId=${movie._id}&theaterId=${theater._id}&date=${selectedDate}` : null,
     fetcher
   );
+
+  // Map showtimes and mark past ones
+  const slots = useMemo(() => {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const parseTimeToMinutes = (timeStr: string) => {
+      const parts = timeStr.split(" ");
+      if (parts.length !== 2) return 0;
+      const [time, modifier] = parts;
+      const timeParts = time.split(":");
+      if (timeParts.length !== 2) return 0;
+      let [hours, minutes] = timeParts.map(Number);
+      if (hours === 12) hours = 0;
+      if (modifier.toUpperCase() === "PM") hours += 12;
+      return hours * 60 + minutes;
+    };
+
+    return rawSlots.map(slot => {
+      const parsedStr = slot.date.includes("T") ? slot.date : `${slot.date}T00:00:00`;
+      const slotDate = new Date(parsedStr);
+      const sDate = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
+
+      let isPast = false;
+      if (sDate.getTime() === today.getTime()) {
+        const slotMinutes = parseTimeToMinutes(slot.time);
+        isPast = slotMinutes <= currentMinutes;
+      } else if (sDate < today) {
+        isPast = true;
+      }
+
+      return { ...slot, isPast };
+    });
+  }, [rawSlots]);
 
   // Sync formats when slots change
   useEffect(() => {
@@ -84,22 +119,30 @@ export default function SelectScheduleScreen({
       setSelectedTime("");
       return;
     }
-    const filteredTimes = slots
-      .filter((s) => s.format === selectedFormat)
-      .map((s) => s.time);
+    const filteredSlots = slots.filter((s) => s.format === selectedFormat);
+    const uniqueTimes = Array.from(new Set(filteredSlots.map((s) => s.time)));
       
-    setTimes(filteredTimes);
-    if (filteredTimes.length > 0) {
-      setSelectedTime(filteredTimes[0]);
-    } else {
-      setSelectedTime("");
-    }
+    setTimes(uniqueTimes);
+    
+    // Auto-select the first non-past time if currently selected time is invalid or past
+    const availableTimes = filteredSlots.filter(s => !s.isPast).map(s => s.time);
+    
+    setSelectedTime(prev => {
+      if (prev && availableTimes.includes(prev)) {
+        return prev;
+      }
+      return availableTimes.length > 0 ? availableTimes[0] : "";
+    });
   }, [selectedFormat, slots]);
 
   const handleSubmit = () => {
+    if (!selectedTime) {
+      alert("Please select a valid showtime.");
+      return;
+    }
     // Find matching showtime ID
     const match = slots.find(
-      (s) => s.format === selectedFormat && s.time === selectedTime
+      (s) => s.format === selectedFormat && s.time === selectedTime && !s.isPast
     );
     if (match) {
       onGetTickets(selectedFormat, selectedTime, match._id);
@@ -254,15 +297,20 @@ export default function SelectScheduleScreen({
           {/* Screen boxes (Times): top 360px, left/right margins 26px */}
           <div className="absolute top-[360px] left-[26px] right-[26px] grid grid-cols-3 gap-[12px] w-fit">
             {times.map((t) => {
+              const slotMatch = slots.find(s => s.format === selectedFormat && s.time === t);
+              const isPast = slotMatch ? slotMatch.isPast : false;
               const isSelected = selectedTime === t;
               return (
                 <button
                   key={t}
+                  disabled={isPast}
                   onClick={() => setSelectedTime(t)}
-                  className={`px-[10px] h-[32px] w-full rounded-[5px] border flex items-center justify-center font-semibold text-[12px] font-inter cursor-pointer transition-all duration-150 ${
-                    isSelected
-                      ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-                      : "bg-[#F7F8FD] text-[#64748B] border-[#CED6E0]"
+                  className={`px-[10px] h-[32px] w-full rounded-[5px] border flex items-center justify-center font-semibold text-[12px] font-inter transition-all duration-150 ${
+                    isPast
+                      ? "bg-[#E2E8F0] text-[#94A3B8] border-[#E2E8F0] cursor-not-allowed"
+                      : isSelected
+                        ? "bg-[#4F46E5] text-white border-[#4F46E5] cursor-pointer"
+                        : "bg-[#F7F8FD] text-[#64748B] border-[#CED6E0] cursor-pointer"
                   }`}
                 >
                   {t}
@@ -273,8 +321,11 @@ export default function SelectScheduleScreen({
 
           {/* Get Tickets Button: top 655px */}
           <button
+            disabled={!selectedTime}
             onClick={handleSubmit}
-            className="absolute top-[655px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
+            className={`absolute top-[655px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] font-semibold text-[14px] flex items-center justify-center font-inter transition-colors ${
+              !selectedTime ? "bg-[#94A3B8] text-white cursor-not-allowed" : "bg-[#4F46E5] text-[#FFFFFF] cursor-pointer hover:bg-[#4338ca]"
+            }`}
           >
             Get Tickets
           </button>
