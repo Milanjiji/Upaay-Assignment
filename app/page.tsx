@@ -34,6 +34,7 @@ import Footer from "@/components/Footer";
 export default function Home() {
   const dispatch = useDispatch();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  const [isBooking, setIsBooking] = useState(false);
 
   useEffect(() => {
     const rehydrateAuth = async () => {
@@ -141,6 +142,7 @@ export default function Home() {
   };
 
   const handleCompletePayment = async (cardDetails?: any) => {
+    setIsBooking(true);
     try {
       const cookies = document.cookie.split(";");
       const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
@@ -179,12 +181,14 @@ export default function Home() {
       }
 
       // Revalidate tickets list and specific showtime seat details
-      mutate(`${API_URL}/api/bookings/user`);
-      mutate(`${API_URL}/api/showtimes/${selectedShowtimeId}`);
+      await mutate(`${API_URL}/api/bookings/user`);
+      await mutate(`${API_URL}/api/showtimes/${selectedShowtimeId}`);
 
       dispatch(navigateTo("payment_success"));
     } catch (e: any) {
       alert(`Booking Error: ${e.message}`);
+    } finally {
+      setIsBooking(false);
     }
   };
 
@@ -196,7 +200,8 @@ export default function Home() {
     // Format selected date logically: "Friday, October 10"
     const formatSelectedDate = (dateStr: string) => {
       try {
-        const date = new Date(dateStr);
+        const parsedStr = dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`;
+        const date = new Date(parsedStr);
         const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const monthNames = [
           "January", "February", "March", "April", "May", "June",
@@ -294,6 +299,7 @@ export default function Home() {
         selectedFormat={selectedFormat}
         seats={bookedSeats}
         totalPrice={bookedTotalPrice}
+        isBooking={isBooking}
         onBack={handleBackFromCheckout}
         onCancel={handleCancelFromCheckout}
         onCompletePayment={handleCompletePayment}

@@ -48,7 +48,8 @@ export default function BookingSummaryScreen({
   // Format selected date logically: "Friday, October 10"
   const formatSelectedDate = (dateStr: string) => {
     try {
-      const date = new Date(dateStr);
+      const parsedStr = dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`;
+      const date = new Date(parsedStr);
       const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const monthNames = [
         "January", "February", "March", "April", "May", "June",

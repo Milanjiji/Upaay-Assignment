@@ -6,37 +6,74 @@ import { resetNavigation } from "@/store/slices/navigationSlice";
 import { resetBooking } from "@/store/slices/bookingSlice";
 import useSWR from "swr";
 import { fetcher } from "@/store/fetcher";
+import Image from "next/image";
 
 interface Ticket {
   _id: string;
-  movieId: { title: string; genre: string; posterUrl: string };
+  movieId: { title: string; genre: string; posterUrl: string; formats: string[]; rating: number; pgRating: string };
   theaterId: { name: string; location: string };
   showtimeId: { date: string; time: string; format: string };
   seats: string[];
   totalPrice: number;
   transactionDate: string;
+  createdAt: string;
 }
 
 export default function TicketsScreen() {
   const dispatch = useDispatch();
+  const [activeTab, setActiveTab] = useState<"my_bookings" | "past_bookings">("my_bookings");
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   // Fetch tickets from backend using SWR
-  const { data: tickets = [], isLoading: loading } = useSWR<Ticket[]>(
+  const { data: tickets = [], isLoading: loading, mutate } = useSWR<Ticket[]>(
     `${API_URL}/api/bookings/user`,
     fetcher
   );
+
+  const handleBack = () => {
+    dispatch(resetBooking());
+    dispatch(resetNavigation());
+  };
 
   const handleBookNow = () => {
     dispatch(resetBooking());
     dispatch(resetNavigation());
   };
 
+  const handleCancel = async (bookingId: string) => {
+    if (!confirm("Are you sure you want to cancel this booking and free the seats?")) return;
+    try {
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find(c => c.trim().startsWith("token="));
+      const tokenVal = tokenCookie ? tokenCookie.split("=")[1] : "";
+      if (!tokenVal) {
+        alert("Session expired. Please log in again.");
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/api/bookings/${bookingId}`, {
+        method: "DELETE",
+        headers: { "x-user-id": tokenVal }
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to cancel booking");
+      }
+
+      alert("Booking cancelled. Seats have been freed.");
+      mutate(); // Reload SWR cache
+    } catch (e: any) {
+      alert(`Cancel Error: ${e.message}`);
+    }
+  };
+
   // Format selected date logically: "Friday, October 10"
   const formatSelectedDate = (dateStr: string) => {
     try {
-      const date = new Date(dateStr);
+      const parsedStr = dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`;
+      const date = new Date(parsedStr);
       const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const monthNames = [
         "January", "February", "March", "April", "May", "June",
@@ -48,71 +85,153 @@ export default function TicketsScreen() {
     }
   };
 
+  // Format transaction date to match layout: "10/9/2023 10:45 AM"
+  const formatTransactionDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      let hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+      return `${month}/${day}/${year} ${hours}:${minutesStr} ${ampm}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const getShowtimeDateTime = (dateStr: string, timeStr: string) => {
+    try {
+      const [datePart] = dateStr.split("T");
+      const [time, modifier] = timeStr.split(" ");
+      let [hoursStr, minutesStr] = time.split(":");
+      let hours = parseInt(hoursStr, 10);
+      const minutes = parseInt(minutesStr, 10);
+      
+      if (modifier === "PM" && hours < 12) {
+        hours += 12;
+      }
+      if (modifier === "AM" && hours === 12) {
+        hours = 0;
+      }
+      
+      const [year, month, day] = datePart.split("-").map(num => parseInt(num, 10));
+      return new Date(year, month - 1, day, hours, minutes);
+    } catch (e) {
+      return new Date(dateStr);
+    }
+  };
+
+  const now = new Date();
+  const myBookings = tickets.filter(t => {
+    if (!t.showtimeId) return false;
+    return getShowtimeDateTime(t.showtimeId.date, t.showtimeId.time) >= now;
+  });
+  const pastBookings = tickets.filter(t => {
+    if (!t.showtimeId) return true;
+    return getShowtimeDateTime(t.showtimeId.date, t.showtimeId.time) < now;
+  });
+  const activeTickets = activeTab === "my_bookings" ? myBookings : pastBookings;
+
   return (
     <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
-      {/* Title Header: top 28px */}
-      <div className="absolute top-[28px] left-[26px] right-[26px] h-[30px] flex items-center justify-between">
-        <h1 className="text-[20px] font-bold text-zinc-900 font-inter">My Tickets</h1>
+      {/* Back button: top 28px, left 26px */}
+      <button
+        onClick={handleBack}
+        className="absolute left-[26px] top-[28px] z-20 cursor-pointer flex items-center gap-[8px] text-zinc-900 font-semibold text-[14px] font-inter"
+      >
+        <Image
+          src="/assets/ep_back.svg"
+          alt="Back"
+          width={21}
+          height={21}
+          className="invert"
+        />
+        Back
+      </button>
+
+      {/* Tabs Container: top 78px, left/right margins: 26px, height: 20px */}
+      <div className="absolute top-[78px] left-[26px] right-[26px] h-[20px] flex items-center gap-[24px]">
+        <button
+          onClick={() => setActiveTab("my_bookings")}
+          className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-[2px] ${
+            activeTab === "my_bookings"
+              ? "text-[#4F46E5] border-[#4F46E5]"
+              : "text-[#64748B] border-transparent"
+          } text-[12px] font-bold font-inter`}
+        >
+          My Bookings
+        </button>
+        
+        <button
+          onClick={() => setActiveTab("past_bookings")}
+          className={`h-full flex items-center justify-center cursor-pointer transition-all duration-150 border-b-2 pb-[2px] ${
+            activeTab === "past_bookings"
+              ? "text-[#4F46E5] border-[#4F46E5]"
+              : "text-[#64748B] border-transparent"
+          } text-[12px] font-bold font-inter`}
+        >
+          Past Bookings
+        </button>
       </div>
 
-      {/* Tickets List / Empty State: top 78px, bottom 89px */}
-      <div className="absolute top-[78px] left-[26px] right-[26px] bottom-[89px] overflow-y-auto scrollbar-none flex flex-col gap-[16px] pb-[16px]">
+      {/* Tickets List Container: top 120px, bottom 89px */}
+      <div className="absolute top-[120px] left-[26px] right-[26px] bottom-[89px] overflow-y-auto scrollbar-none flex flex-col gap-[20px] pb-[20px] items-center">
         {loading ? (
-          <div className="flex-1 w-full h-full flex items-center justify-center text-[12px] text-zinc-500 font-inter font-medium py-[40px]">
-            Loading tickets...
+          <div className="w-full flex-1 flex flex-col items-center justify-center py-[80px]">
+            <div className="animate-spin rounded-full h-[40px] w-[40px] border-t-2 border-b-2 border-[#4F46E5] mb-[12px]" />
+            <span className="text-[13px] font-medium text-[#64748B] font-inter">Loading tickets...</span>
           </div>
-        ) : tickets.length > 0 ? (
-          tickets.map((ticket) => (
+        ) : activeTickets.length > 0 ? (
+          activeTickets.map((ticket) => (
             <div
               key={ticket._id}
-              className="w-full bg-white rounded-[12px] border border-zinc-150 shadow-[0_4px_12px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col shrink-0"
+              className="w-[322px] bg-white rounded-[5px] border border-[#D9D9D9] overflow-hidden flex flex-col shrink-0"
             >
-              {/* Card Header (Movie Title & Format) */}
-              <div className="p-[14px] bg-[#4F46E5]/5 border-b border-zinc-100 flex items-center justify-between">
-                <span className="text-[14px] font-bold text-zinc-950 font-inter truncate pr-[8px]">
-                  {ticket.movieId?.title || "Movie Ticket"}
-                </span>
-                <span className="bg-[#4F46E5] text-white text-[10px] font-bold font-inter px-[6px] py-[2px] rounded">
-                  {ticket.showtimeId?.format || "2D"}
-                </span>
+              {/* Movie Banner Banner: width 322px, height 169px */}
+              <div className="relative w-full h-[169px] shrink-0 bg-zinc-200">
+                <img
+                  src={ticket.movieId?.posterUrl || "/assets/home/Hero Image.png"}
+                  alt={ticket.movieId?.title || "Movie Banner"}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
               </div>
 
-              {/* Card Details */}
-              <div className="p-[14px] flex flex-col gap-[10px]">
-                {/* Theater Name */}
-                <div className="flex items-center gap-[6px] text-zinc-600 text-[12px] font-inter">
-                  <img
-                    src="/assets/Vector-3.svg"
-                    alt="Theater"
-                    className="w-[11px] h-[10px] shrink-0 opacity-70"
-                  />
-                  <span className="truncate">{ticket.theaterId?.name || "Theater location"}</span>
+              {/* Details Box inside card */}
+              <div className="p-[16px] flex flex-col w-full">
+                {/* Movie Title: font Inter 700 Bold 16px */}
+                <h3 className="text-[16px] font-bold text-[#121212] font-inter leading-none">
+                  {ticket.movieId?.title || "Movie Ticket"}
+                </h3>
+
+                {/* Theater & Screen & Format: (approx 20px gap) */}
+                <div className="flex justify-between items-center mt-[20px] text-[14px] font-medium text-[#121212] font-inter leading-none">
+                  <span className="truncate pr-[8px]">{ticket.theaterId?.name}</span>
+                  <span className="shrink-0">Screen 1 - {ticket.showtimeId?.format}</span>
                 </div>
 
-                {/* Date & Time */}
-                <div className="flex items-center justify-between text-zinc-500 text-[12px] font-inter">
-                  <div className="flex items-center gap-[6px]">
-                    <img
-                      src="/assets/formkit_date.svg"
-                      alt="Date"
-                      className="w-[11px] h-[11px] shrink-0 opacity-70"
-                    />
-                    <span>{formatSelectedDate(ticket.showtimeId?.date)}</span>
-                  </div>
+                {/* Date & Time Row: (approx 14px gap) */}
+                <div className="flex justify-between items-center mt-[14px] text-[14px] font-medium text-[#64748B] font-inter leading-none">
+                  <span>{formatSelectedDate(ticket.showtimeId?.date)}</span>
                   <span>{ticket.showtimeId?.time}</span>
                 </div>
 
-                {/* Seats list */}
-                <div className="flex items-center justify-between mt-[4px]">
-                  <div className="flex flex-col gap-[4px]">
-                    <span className="text-[10px] font-semibold text-zinc-400 font-inter uppercase tracking-wider">
-                      Seats
+                {/* Seats & Amount Paid Row: (approx 24px gap) */}
+                <div className="flex justify-between items-start mt-[24px]">
+                  {/* Seats Badges */}
+                  <div className="flex flex-col gap-[6px]">
+                    <span className="text-[14px] font-medium text-[#64748B] font-inter leading-none">
+                      Seats:
                     </span>
-                    <div className="flex flex-wrap gap-[4px]">
+                    <div className="flex flex-wrap gap-[6px]">
                       {ticket.seats.map((seat) => (
                         <span
                           key={seat}
-                          className="bg-zinc-100 text-zinc-700 font-bold text-[10px] font-inter rounded px-[5px] py-[2px]"
+                          className="bg-[#64748B] text-white font-semibold text-[12px] font-inter rounded-[5px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] shrink-0"
                         >
                           {seat.replace("-", "")}
                         </span>
@@ -120,21 +239,52 @@ export default function TicketsScreen() {
                     </div>
                   </div>
 
-                  {/* Total Paid */}
-                  <div className="flex flex-col items-end gap-[2px]">
-                    <span className="text-[10px] font-semibold text-zinc-400 font-inter uppercase tracking-wider">
-                      Paid
+                  {/* Total Paid amount */}
+                  <div className="flex flex-col items-end gap-[6px]">
+                    <span className="text-[14px] font-medium text-[#64748B] font-inter leading-none">
+                      Amount Paid:
                     </span>
-                    <span className="text-[14px] font-bold text-zinc-950 font-inter">
+                    <span className="text-[16px] font-bold text-[#121212] font-inter leading-none">
                       ₹{ticket.totalPrice}
                     </span>
+                  </div>
+                </div>
+
+                {/* Transaction Info and QR Code Row: (approx 28px gap, no dotted line) */}
+                <div className="flex justify-between items-end mt-[28px]">
+                  {/* Cancel Button and Transaction Date */}
+                  <div className="flex flex-col gap-[12px] text-[12px] text-[#64748B] font-inter leading-tight items-start">
+                    {activeTab === "my_bookings" && (
+                      <button
+                        onClick={() => handleCancel(ticket._id)}
+                        className="bg-[#F7F8FD] border border-[#CED6E0] rounded-[5px] px-[10px] py-[8px] text-[#ED183E] font-semibold text-[12px] font-inter cursor-pointer transition-colors hover:bg-red-50"
+                      >
+                        Cancel Booking
+                      </button>
+                    )}
+                    <div className="flex flex-col gap-[4px]">
+                      <span>Transaction Date:</span>
+                      <span className="font-medium">
+                        {formatTransactionDate(ticket.transactionDate || ticket.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* QR Code Icon */}
+                  <div className="shrink-0 relative w-[80px] h-[88px]">
+                    <Image
+                      src="/assets/1678237335 1.svg"
+                      alt="QR Code"
+                      fill
+                      className="object-contain"
+                    />
                   </div>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center flex-1 py-[60px] text-center">
+          <div className="flex flex-col items-center justify-center flex-1 py-[60px] text-center w-[322px]">
             {/* Cute Ticket Outline */}
             <div className="w-[100px] h-[100px] bg-zinc-100 rounded-full flex items-center justify-center mb-[20px]">
               <svg
@@ -153,10 +303,12 @@ export default function TicketsScreen() {
             </div>
             
             <h2 className="text-[16px] font-bold text-zinc-800 font-inter mb-[6px]">
-              No Tickets Booked Yet
+              {activeTab === "my_bookings" ? "No Upcoming Bookings" : "No Past Bookings"}
             </h2>
             <p className="text-[13px] font-normal text-zinc-500 font-inter max-w-[200px] mb-[24px] leading-relaxed">
-              Once you book a movie, your tickets will show up here.
+              {activeTab === "my_bookings" 
+                ? "Once you book a movie, your upcoming tickets will show up here." 
+                : "You don't have any past theater bookings yet."}
             </p>
 
             <button

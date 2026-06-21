@@ -38,10 +38,16 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
     for (let i = 0; i < 7; i++) {
       const nextDay = new Date(today);
       nextDay.setDate(today.getDate() + i);
+      
+      const year = nextDay.getFullYear();
+      const month = String(nextDay.getMonth() + 1).padStart(2, "0");
+      const date = String(nextDay.getDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${date}`;
+
       days.push({
         name: dayNames[nextDay.getDay()],
         number: nextDay.getDate(),
-        dateString: nextDay.toISOString().split("T")[0]
+        dateString
       });
     }
     return days;
@@ -75,6 +81,9 @@ export default function SelectTheatreScreen({ movie, onBack, onCancel, onSelectT
           alt={movie.title}
           className="absolute inset-0 w-full h-full object-cover"
         />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-[#151130B2] z-0" />
+        
         {/* Title inside hero banner: top 98px */}
         <div className="absolute top-[98px] left-[26px] right-[26px] z-10 flex flex-col">
           <h1 className="text-[20px] font-bold text-white font-inter leading-tight truncate">

@@ -111,7 +111,8 @@ export default function SelectScheduleScreen({
   // Format selected date logically: "Friday, October 10"
   const formatSelectedDate = (dateStr: string) => {
     try {
-      const date = new Date(dateStr);
+      const parsedStr = dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`;
+      const date = new Date(parsedStr);
       const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const monthNames = [
         "January", "February", "March", "April", "May", "June",
@@ -138,6 +139,9 @@ export default function SelectScheduleScreen({
           alt={movie.title}
           className="absolute inset-0 w-full h-full object-cover"
         />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-[#151130B2] z-0" />
+        
         {/* Title and metadata inside hero banner: top 98px */}
         <div className="absolute top-[98px] left-[26px] right-[26px] z-10 flex flex-col">
           <h1 className="text-[20px] font-bold text-white font-inter leading-tight truncate">

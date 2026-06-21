@@ -25,6 +25,7 @@ interface CheckoutScreenProps {
   selectedFormat: string;
   seats: string[];
   totalPrice: number;
+  isBooking?: boolean;
   onBack: () => void;
   onCancel: () => void;
   onCompletePayment: (cardDetails?: { nameOnCard: string; cardNumber: string }) => void;
@@ -38,6 +39,7 @@ export default function CheckoutScreen({
   selectedFormat,
   seats,
   totalPrice,
+  isBooking = false,
   onBack,
   onCancel,
   onCompletePayment,
@@ -303,10 +305,23 @@ export default function CheckoutScreen({
 
       {/* Complete Payment Button: top 699px */}
       <button
+        disabled={isBooking}
         onClick={handlePaymentSubmit}
-        className="absolute top-[699px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
+        className={`absolute top-[699px] left-1/2 -translate-x-1/2 w-[345px] h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors ${
+          isBooking ? "opacity-60 cursor-not-allowed" : ""
+        }`}
       >
-        Complete Payment
+        {isBooking ? (
+          <div className="flex items-center gap-[8px]">
+            <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Processing...
+          </div>
+        ) : (
+          "Complete Payment"
+        )}
       </button>
     </div>
   );
