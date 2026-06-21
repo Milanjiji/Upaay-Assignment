@@ -12,7 +12,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // Fallback details if Redux slice isn't hydrated yet (or standard mock info)
+  // Fallback details if Redux slice isn't hydrated yet
   const displayName = user?.name || "Hiring Manager";
   const displayEmail = user?.email || "hiring@upaay.creative";
 
@@ -27,88 +27,46 @@ export default function ProfileScreen() {
     window.location.href = "/login";
   };
 
-  const menuItems = [
-    { title: "Personal Details", icon: "👤" },
-    { title: "Payment Settings", icon: "💳" },
-    { title: "Notifications", icon: "🔔" },
-    { title: "Help & Support", icon: "💬" },
-  ];
-
   return (
-    <div className="relative w-full h-full flex flex-col bg-[#F7F8FD]">
-      {/* Header */}
-      <div className="absolute top-[28px] left-[26px] right-[26px] h-[30px] flex items-center justify-between">
-        <h1 className="text-[20px] font-bold text-zinc-900 font-inter">Profile</h1>
+    <div className="relative w-full h-full flex flex-col items-center bg-[#F7F8FD] pt-[100px] px-[26px]">
+      {/* User avatar circle in center top */}
+      <div className="w-[100px] h-[100px] rounded-full bg-gradient-to-tr from-[#4F46E5] to-[#6366F1] flex items-center justify-center text-white text-[32px] font-bold shadow-sm font-inter shrink-0">
+        {displayName.slice(0, 2).toUpperCase()}
       </div>
 
-      {/* User Information Card: top 78px */}
-      <div className="absolute top-[78px] left-[26px] right-[26px] bg-white rounded-[12px] p-[16px] border border-zinc-150 shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex items-center gap-[16px]">
-        {/* Avatar badge */}
-        <div className="w-[60px] h-[60px] rounded-full bg-[#4F46E5] flex items-center justify-center text-white text-[22px] font-bold shadow-sm font-inter">
-          {displayName.slice(0, 2).toUpperCase()}
-        </div>
-        
-        {/* User text details */}
-        <div className="flex flex-col gap-[2px]">
-          <h2 className="text-[16px] font-bold text-zinc-900 font-inter leading-none">
-            {displayName}
-          </h2>
-          <span className="text-[13px] font-normal text-zinc-500 font-inter truncate leading-none mt-[4px]">
-            {displayEmail}
-          </span>
-        </div>
-      </div>
+      {/* Name: same font/text type of movie name in movie details page */}
+      <h2 className="text-[16px] font-semibold text-zinc-900 font-inter leading-tight mt-[20px] text-center">
+        {displayName}
+      </h2>
 
-      {/* Navigation settings options: top 178px */}
-      <div className="absolute top-[168px] left-[26px] right-[26px] bottom-[89px] flex flex-col gap-[10px] overflow-y-auto scrollbar-none">
-        {menuItems.map((item, idx) => (
-          <button
-            key={idx}
-            onClick={() => alert(`${item.title} section is coming soon!`)}
-            className="w-full h-[52px] bg-white rounded-[10px] border border-zinc-150 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center justify-between px-[16px] cursor-pointer hover:bg-zinc-50 transition-colors"
-          >
-            <div className="flex items-center gap-[12px]">
-              <span className="text-[18px]">{item.icon}</span>
-              <span className="text-[14px] font-semibold text-zinc-800 font-inter">
-                {item.title}
-              </span>
-            </div>
-            {/* Arrow icon */}
-            <svg className="w-[16px] h-[16px] text-zinc-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        ))}
+      {/* Email: same font/text type of theater location from home screen */}
+      <span className="text-[12px] font-normal text-[#64748B] font-inter truncate leading-[15px] mt-[6px] text-center w-full">
+        {displayEmail}
+      </span>
 
+      {/* Action Buttons Container */}
+      <div className="w-full flex flex-col gap-[12px] mt-[48px]">
         {user?.role === "admin" && (
           <button
             onClick={() => router.push("/admin")}
-            className="w-full h-[52px] bg-[#4F46E5]/10 border border-[#4F46E5]/20 rounded-[10px] flex items-center justify-between px-[16px] cursor-pointer hover:bg-[#4F46E5]/20 transition-colors shrink-0"
+            className="w-full h-[48px] bg-white border border-[#CED6E0] rounded-[8px] flex items-center justify-between px-[16px] cursor-pointer hover:bg-zinc-50 transition-colors"
           >
-            <div className="flex items-center gap-[12px]">
-              <span className="text-[18px]">⚙️</span>
-              <span className="text-[14px] font-bold text-[#4F46E5] font-inter">
+            <div className="flex items-center gap-[10px]">
+              <span className="text-[16px]">⚙️</span>
+              <span className="text-[13px] font-semibold text-zinc-800 font-inter">
                 Admin Console
               </span>
             </div>
-            <svg className="w-[16px] h-[16px] text-[#4F46E5]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <svg className="w-[14px] h-[14px] text-zinc-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
         )}
 
-        {/* Spacer */}
-        <div className="flex-1 min-h-[10px]" />
-
-        {/* Logout Button */}
         <button
           onClick={handleLogout}
-          className="w-full h-[48px] bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-[10px] flex items-center justify-center gap-[8px] cursor-pointer transition-colors text-rose-600 font-bold text-[14px] font-inter mt-[8px] mb-[16px]"
+          className="w-full h-[37px] rounded-[5px] bg-[#4F46E5] text-[#FFFFFF] font-semibold text-[14px] flex items-center justify-center cursor-pointer font-inter hover:bg-[#4338ca] transition-colors"
         >
-          {/* Logout icon */}
-          <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
           Log Out
         </button>
       </div>
