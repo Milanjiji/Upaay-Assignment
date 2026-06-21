@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Showtime = require("../models/Showtime");
 const { verifyUser, verifyAdmin } = require("../middleware/auth");
+const { redlock } = require("../config/redis");
 
 // GET /api/bookings - list all bookings (Admin only)
 router.get("/", verifyAdmin, async (req, res) => {
@@ -40,21 +41,27 @@ router.get("/user", verifyUser, async (req, res) => {
 
 // POST /api/bookings - place a ticket booking
 router.post("/", verifyUser, async (req, res) => {
+  const { movieId, theaterId, showtimeId, seats, totalPrice, paymentMethod, cardDetails } = req.body;
+
+  if (!movieId || !theaterId || !showtimeId || !seats || seats.length === 0 || !totalPrice) {
+    return res.status(400).json({ message: "Required booking information is missing" });
+  }
+
+  if (seats.length > 10) {
+    return res.status(400).json({ message: "You can select a maximum of 10 seats per transaction." });
+  }
+
+  let lock;
+  try {
+    lock = await redlock.acquire([`locks:showtime:${showtimeId}`], 10000);
+  } catch (error) {
+    return res.status(409).json({ message: "High traffic: Someone else is currently booking tickets for this show. Please try again in a few seconds." });
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { movieId, theaterId, showtimeId, seats, totalPrice, paymentMethod, cardDetails } = req.body;
-
-    if (!movieId || !theaterId || !showtimeId || !seats || seats.length === 0 || !totalPrice) {
-      await session.abortTransaction();
-      return res.status(400).json({ message: "Required booking information is missing" });
-    }
-
-    if (seats.length > 10) {
-      await session.abortTransaction();
-      return res.status(400).json({ message: "You can select a maximum of 10 seats per transaction." });
-    }
 
     const showtime = await Showtime.findById(showtimeId).session(session);
     if (!showtime) {
@@ -110,6 +117,13 @@ router.post("/", verifyUser, async (req, res) => {
     res.status(500).json({ message: "Failed to place booking" });
   } finally {
     session.endSession();
+    if (lock) {
+      try {
+        await lock.release();
+      } catch (err) {
+        console.error("Failed to release lock:", err);
+      }
+    }
   }
 });
 
