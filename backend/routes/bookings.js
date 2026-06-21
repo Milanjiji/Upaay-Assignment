@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Showtime = require("../models/Showtime");
 const { verifyUser, verifyAdmin } = require("../middleware/auth");
@@ -39,19 +40,25 @@ router.get("/user", verifyUser, async (req, res) => {
 
 // POST /api/bookings - place a ticket booking
 router.post("/", verifyUser, async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { movieId, theaterId, showtimeId, seats, totalPrice, paymentMethod, cardDetails } = req.body;
 
     if (!movieId || !theaterId || !showtimeId || !seats || seats.length === 0 || !totalPrice) {
+      await session.abortTransaction();
       return res.status(400).json({ message: "Required booking information is missing" });
     }
 
     if (seats.length > 10) {
+      await session.abortTransaction();
       return res.status(400).json({ message: "You can select a maximum of 10 seats per transaction." });
     }
 
-    const showtime = await Showtime.findById(showtimeId);
+    const showtime = await Showtime.findById(showtimeId).session(session);
     if (!showtime) {
+      await session.abortTransaction();
       return res.status(404).json({ message: "Showtime session not found" });
     }
 
@@ -60,9 +67,11 @@ router.post("/", verifyUser, async (req, res) => {
     for (const seatNum of seats) {
       const seat = seatMap.get(seatNum);
       if (!seat) {
+        await session.abortTransaction();
         return res.status(400).json({ message: `Seat ${seatNum} is invalid for this theater layout` });
       }
       if (seat.status === "occupied") {
+        await session.abortTransaction();
         return res.status(400).json({ message: `Seat ${seatNum.replace("-", "")} is already occupied` });
       }
     }
@@ -76,12 +85,13 @@ router.post("/", verifyUser, async (req, res) => {
             "seats.$.status": "occupied", 
             "seats.$.userId": req.user._id 
           } 
-        }
+        },
+        { session }
       );
     }
 
     // Save Booking transaction record
-    const newBooking = new Booking({
+    const newBookings = await Booking.create([{
       userId: req.user._id,
       movieId,
       theaterId,
@@ -90,13 +100,16 @@ router.post("/", verifyUser, async (req, res) => {
       totalPrice,
       paymentMethod,
       cardDetails
-    });
+    }], { session });
 
-    await newBooking.save();
-    res.status(201).json({ message: "Booking placed successfully", booking: newBooking });
+    await session.commitTransaction();
+    res.status(201).json({ message: "Booking placed successfully", booking: newBookings[0] });
   } catch (error) {
+    await session.abortTransaction();
     console.error("Create booking error:", error);
     res.status(500).json({ message: "Failed to place booking" });
+  } finally {
+    session.endSession();
   }
 });
 
